@@ -34,6 +34,7 @@ def test_showcase_is_complete() -> None:
         "disputed",
         "unsupported",
     }
+    assert payload["claim_survival_rate"] == 0.6
     assert len(payload["receipt_hash"]) == 64
 
 
@@ -83,6 +84,8 @@ def test_governor_reuses_only_live_verified_receipts(tmp_path: Path) -> None:
         evidence=[EvidenceItem(id="E1", title="Time", content="Meetings take four hours")],
     )
     result = client.post("/api/showcase").json()
+    result["governor"]["input_tokens"] = 1200
+    result["governor"]["output_tokens"] = 300
     base_payload = {
         "request": request.model_dump(),
         "request_fingerprint": governor.fingerprint(request),
@@ -102,7 +105,57 @@ def test_governor_reuses_only_live_verified_receipts(tmp_path: Path) -> None:
     }
     plan = governor.plan(request, [showcase, live])
     assert plan.exact_record == live
-    assert plan.estimated_saved > 3000
+    assert plan.reuse_tokens_avoided == 1500
+
+
+def test_correction_invalidates_exact_reuse_and_enters_memory(tmp_path: Path) -> None:
+    governor = TokenGovernor(tmp_path / "governor.json")
+    request = DecisionRequest(
+        question="Should the product team release this workflow change on Monday?",
+        context="A reversible stage is available.",
+    )
+    live = {
+        "kind": "decision",
+        "record_hash": "d" * 64,
+        "payload": {
+            "mode": "live",
+            "decision_id": "DG-CORRECTED",
+            "request": request.model_dump(),
+            "request_fingerprint": governor.fingerprint(request),
+            "result": {
+                "decision": "Run the stage",
+                "unresolved_tension": "Speed versus reliability",
+                "next_test": "Measure errors",
+                "governor": {"input_tokens": 900, "output_tokens": 300},
+            },
+        },
+    }
+    correction = {
+        "kind": "correction",
+        "record_hash": "e" * 64,
+        "payload": {
+            "decision_id": "DG-CORRECTED",
+            "note": "The error rate doubled after the first hour.",
+        },
+    }
+    plan = governor.plan(request, [live, correction])
+    assert plan.exact_record is None
+    assert "error rate doubled" in plan.memory_brief
+
+
+def test_fingerprint_ignores_whitespace_and_constraint_order(tmp_path: Path) -> None:
+    governor = TokenGovernor(tmp_path / "governor.json")
+    left = DecisionRequest(
+        question="Should we stage the release on Monday?",
+        context="The team needs a reversible test.",
+        constraints=["No weekend release", "Rollback under 30 minutes"],
+    )
+    right = DecisionRequest(
+        question="  Should   we stage the release on Monday?  ",
+        context="The team needs a reversible test.",
+        constraints=["Rollback under 30 minutes", "No weekend release"],
+    )
+    assert governor.fingerprint(left) == governor.fingerprint(right)
 
 
 def test_governor_compacts_relevant_receipts_and_records_savings(tmp_path: Path) -> None:
@@ -136,7 +189,8 @@ def test_governor_compacts_relevant_receipts_and_records_savings(tmp_path: Path)
         plan=plan,
         input_tokens=1200,
         output_tokens=400,
-        saved_tokens=plan.estimated_saved,
+        saved_tokens=0,
+        estimated_context_tokens_avoided=plan.estimated_context_tokens_avoided,
         note="test",
     )
     assert report.input_tokens == 1200
@@ -185,7 +239,7 @@ def test_live_pipeline_uses_four_structured_calls(monkeypatch, tmp_path: Path) -
             )
 
     class FakeClient:
-        def __init__(self) -> None:
+        def __init__(self, **kwargs) -> None:
             self.responses = Responses()
 
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
@@ -199,4 +253,12 @@ def test_live_pipeline_uses_four_structured_calls(monkeypatch, tmp_path: Path) -
     assert calls == ["builder_pass", "breaker_pass", "grounder_pass", "dissent_garden_verdict"]
     assert usage == (40, 80)
     assert result.mode == "live"
-    assert result.evidence_coverage == 1.0
+    assert result.claim_survival_rate == 0.333
+
+
+def test_correction_requires_existing_decision() -> None:
+    response = client.post(
+        "/api/decisions/DG-DOES-NOT-EXIST/corrections",
+        json={"note": "This should not create an orphan correction."},
+    )
+    assert response.status_code == 404

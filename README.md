@@ -2,8 +2,9 @@
 
 > Keep the disagreement you cannot afford to lose.
 
-Dissent Garden is an evidence-bound decision workspace. Three independent
-GPT-5.6 seats examine the same decision before an arbiter sees their work:
+Dissent Garden is an evidence-bound decision workspace for product and
+engineering teams shipping under uncertainty. Three role-separated GPT-5.6
+passes examine the same decision before an arbiter sees their work:
 
 - **Builder** finds the strongest bounded, reversible proposal.
 - **Breaker** exposes failure modes, silent assumptions, and displaced cost.
@@ -20,7 +21,7 @@ Most AI decision tools return one persuasive answer. That can hide minority
 risks, unsupported claims, and the reasons a decision changed later. Dissent
 Garden makes those boundaries visible:
 
-1. Seats reason independently.
+1. Role-separated seats reason in isolation before adjudication.
 2. Model-supplied evidence IDs are validated by the server.
 3. Unsupported claims cannot be silently promoted as survivors.
 4. Corrections append to history rather than rewriting it.
@@ -30,8 +31,11 @@ Garden makes those boundaries visible:
 
 The receipt-aware Governor is part of the product, not a future optimization.
 
-- Exact repeats of a live, verified decision reuse its receipt with **zero new
-  GPT-5.6 calls**.
+- Exact repeats of a live, verified, correction-free decision reuse its receipt
+  with **zero new GPT-5.6 calls**. The displayed saving comes from the original
+  receipt's actual recorded usage.
+- A later correction invalidates exact reuse and enters the next bounded memory
+  brief, so updated evidence cannot silently return a stale verdict.
 - Near-relevant prior decisions are ranked lexically and condensed into a brief
   capped at 1,800 characters.
 - Old conclusions are explicitly not treated as new evidence.
@@ -39,8 +43,9 @@ The receipt-aware Governor is part of the product, not a future optimization.
   different next test.
 - BUILD, AUDIT, DWELL, and SHED modes progressively reduce output ceilings as
   the configurable daily budget fills.
-- Actual input/output usage and estimated avoided tokens are written to a
-  separate local Governor state file and displayed in the interface.
+- Actual input/output usage and actual model tokens avoided by receipt reuse are
+  written to a separate local Governor state file and displayed in the
+  interface. Hypothetical context reduction is labeled separately as estimated.
 - Curated showcase records never enter live model memory or satisfy live cache
   reuse.
 
@@ -70,6 +75,8 @@ a live model response.
 | `OPENAI_API_KEY` | none | Enables live deliberation |
 | `DISSENT_GARDEN_MODEL` | `gpt-5.6` | Runtime model; keep GPT-5.6 for Build Week |
 | `DISSENT_GARDEN_DAILY_TOKEN_BUDGET` | `100000` | Local Governor threshold |
+| `DISSENT_GARDEN_API_TIMEOUT_SECONDS` | `90` | Timeout applied by the OpenAI client |
+| `DISSENT_GARDEN_API_MAX_RETRIES` | `2` | SDK retries for transient failures |
 
 ## Architecture
 
@@ -89,8 +96,8 @@ flowchart LR
     L --> M
 ```
 
-The three seats run concurrently through the OpenAI Responses API. Each returns
-strict structured output. The arbiter receives their completed independent
+The three role-separated passes run concurrently through the OpenAI Responses API. Each returns
+strict structured output. The arbiter receives their completed isolated
 passes and, when relevant, a small receipt brief produced deterministically by
 the Governor. Server-side validation removes invented evidence IDs and demotes
 evidence-free survivors to unsupported.
@@ -116,13 +123,14 @@ node --check app\static\app.js
 ```
 
 The tests cover the front door, showcase contract, missing-key boundary,
-evidence-ID validation, hash-chain tamper detection, live-only receipt reuse,
-bounded memory compaction, and Governor accounting.
+evidence-ID validation, hash-chain tamper detection, correction-aware live-only
+receipt reuse, canonical fingerprints, bounded memory compaction, Governor
+accounting, and orphan-correction rejection.
 
 ## OpenAI Build Week disclosure
 
 This repository and implementation were created on **July 17, 2026**, during
-the OpenAI Build Week submission period. The conceptual roots—independent
+the OpenAI Build Week submission period. The conceptual roots—role-separated
 personas, preserved disagreement, append-only ledgers, and token governance—were
 developed earlier in the creator's private research corpus. No pre-existing
 application code was copied into this repository. The Build Week project is the
@@ -145,8 +153,8 @@ Devpost submission.
 
 ### How GPT-5.6 is used in the product
 
-GPT-5.6 performs the product's core work at runtime. Three independent calls
-produce evidence-cited seat passes. A fourth call adjudicates their atomic
+GPT-5.6 performs the product's core work at runtime. Three role-separated calls
+produce evidence-cited seat passes before seeing one another. A fourth call adjudicates their atomic
 claims and creates the surviving core, unresolved tension, next test, and
 decision. Removing GPT-5.6 would remove the deliberation product itself; its use
 is neither incidental nor decorative.
@@ -157,12 +165,15 @@ is neither incidental nor decorative.
 - Decision records remain local as JSONL unless the operator deploys the app.
 - Evidence is supplied by the user; Dissent Garden does not claim to fact-check
   the external world.
-- Evidence coverage measures citation coverage, not truth.
+- The claim-survival rate reports the share of adjudicated claims that survived;
+  it is not a confidence or truth score.
 - The hash chain is tamper-evident, not tamper-proof against a privileged local
   attacker who can replace the complete ledger.
+- The current JSONL build is a single-user contest prototype. Public deployments
+  should contain demonstration data only until authentication and tenant
+  isolation are added.
 - Dissent Garden is a decision aid, not medical, legal, or financial advice.
 
 ## License
 
 MIT — see `LICENSE`.
-

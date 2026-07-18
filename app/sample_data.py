@@ -12,31 +12,51 @@ from .contracts import (
 
 
 SAMPLE_REQUEST = DecisionRequest(
-    question="Should our four-person product team replace weekly status meetings with an asynchronous written update for a six-week trial?",
+    question=(
+        "Should our six-person product team release the new onboarding flow to "
+        "100% of users on Friday, or begin with a 10% staged rollout?"
+    ),
     context=(
-        "The team wants more focus time without losing early warning signals. "
-        "Two people work remotely and two share an office."
+        "The redesign improved activation in beta, but the team saw an Android "
+        "reliability regression. A coordinated marketing campaign begins Monday."
     ),
     constraints=[
-        "No new paid software",
-        "The trial must be reversible",
-        "Blocked work must become visible within one business day",
+        "Protect Android reliability",
+        "Any rollout must be reversible within 30 minutes",
+        "Customer support has no weekend coverage",
+        "The marketing campaign begins Monday morning",
     ],
     evidence=[
         EvidenceItem(
             id="E1",
-            title="Meeting sample",
-            content="The last six status meetings averaged 47 minutes for four people.",
+            title="Beta activation",
+            content=(
+                "The redesigned flow increased completed activation by 8.2% relative "
+                "to control among 212 beta participants."
+            ),
         ),
         EvidenceItem(
             id="E2",
-            title="Team pulse",
-            content="Three of four teammates asked for more uninterrupted mornings.",
+            title="Android reliability",
+            content=(
+                "Android crash-free sessions fell from 99.4% to 97.8% during the beta. "
+                "The cause has not been isolated."
+            ),
         ),
         EvidenceItem(
             id="E3",
-            title="Recent incident",
-            content="A dependency risk surfaced three days late when its owner missed a meeting.",
+            title="Support schedule",
+            content="Customer support has no scheduled coverage from Friday 6 PM until Monday 8 AM.",
+        ),
+        EvidenceItem(
+            id="E4",
+            title="Rollback drills",
+            content="Three rollback drills completed in 14, 18, and 22 minutes.",
+        ),
+        EvidenceItem(
+            id="E5",
+            title="Campaign flexibility",
+            content="Marketing can point Monday's campaign to a waitlist without penalty until Sunday noon.",
         ),
     ],
 )
@@ -46,88 +66,105 @@ def showcase_result() -> DeliberationResult:
     seats = [
         SeatPass(
             seat="builder",
-            thesis="Run a bounded asynchronous trial because the time cost is measurable and the change is reversible.",
+            thesis=(
+                "Capture the activation gain through a staged rollout with explicit "
+                "reliability gates instead of exposing every user at once."
+            ),
             claims=[
                 SeatClaim(
-                    statement="The current meeting consumes more than three team-hours each week.",
+                    statement="The beta provides a credible signal that the redesign can improve activation.",
                     evidence_ids=["E1"],
-                    confidence=0.98,
+                    confidence=0.82,
                 ),
                 SeatClaim(
-                    statement="A written update can return focus time to most of the team.",
-                    evidence_ids=["E2"],
-                    confidence=0.78,
+                    statement="The team has demonstrated rollback within the required 30-minute window.",
+                    evidence_ids=["E4"],
+                    confidence=0.96,
                 ),
             ],
-            question_for_others="What minimum escalation rule would prevent silence from hiding a blocker?",
+            question_for_others="What Android stop threshold would make a staged rollout acceptably reversible?",
         ),
         SeatPass(
             seat="breaker",
-            thesis="The meeting is not the real risk; an asynchronous process can make weak signals easier to ignore.",
+            thesis=(
+                "A Friday release externalizes an unresolved Android defect into a period "
+                "with no support coverage, so even a small stage needs timing controls."
+            ),
             claims=[
                 SeatClaim(
-                    statement="A missed synchronous checkpoint has already delayed a dependency warning.",
+                    statement="The Android reliability regression is material and unexplained.",
+                    evidence_ids=["E2"],
+                    confidence=0.97,
+                ),
+                SeatClaim(
+                    statement="A Friday rollout could leave affected users without support until Monday.",
                     evidence_ids=["E3"],
                     confidence=0.93,
                 ),
-                SeatClaim(
-                    statement="Written updates may reduce spontaneous cross-team problem solving.",
-                    evidence_ids=[],
-                    confidence=0.44,
-                ),
             ],
-            question_for_others="Who is accountable when an update contains a blocker but nobody responds?",
+            question_for_others="Why accept weekend exposure when the campaign can still be redirected?",
         ),
         SeatPass(
             seat="grounder",
-            thesis="The evidence supports testing a change, but not permanently removing synchronous contact.",
+            thesis=(
+                "The evidence supports testing activation upside and avoiding a full launch; "
+                "it does not establish that the Android regression is safe at any scale."
+            ),
             claims=[
                 SeatClaim(
-                    statement="The time burden and demand for focus are supported by the supplied evidence.",
-                    evidence_ids=["E1", "E2"],
-                    confidence=0.96,
+                    statement="The activation estimate comes from a modest beta sample and remains uncertain.",
+                    evidence_ids=["E1"],
+                    confidence=0.86,
                 ),
                 SeatClaim(
-                    statement="The evidence does not show that asynchronous updates catch blockers reliably.",
-                    evidence_ids=["E3"],
-                    confidence=0.9,
+                    statement="Campaign timing does not force a Friday production release.",
+                    evidence_ids=["E5"],
+                    confidence=0.95,
                 ),
             ],
-            question_for_others="What observable threshold would cause the team to restore the meeting?",
+            question_for_others="What observation during the stage would justify expanding beyond 10%?",
         ),
     ]
     claims = [
         AdjudicatedClaim(
             id="C1",
-            statement="The existing meeting costs more than three team-hours per week.",
+            statement="The redesign produced an activation improvement in beta.",
             status=ClaimStatus.SURVIVED,
             evidence_ids=["E1"],
             supporting_seats=["builder", "grounder"],
-            challenge="The sample is only six weeks, but the arithmetic is direct.",
+            challenge="The 212-person sample does not establish the production effect size.",
         ),
         AdjudicatedClaim(
             id="C2",
-            statement="Most of the team wants more uninterrupted morning work.",
+            statement="The Android build has a material unresolved reliability regression.",
             status=ClaimStatus.SURVIVED,
             evidence_ids=["E2"],
-            supporting_seats=["builder", "grounder"],
-            challenge="Preference does not prove that removing meetings improves delivery.",
+            supporting_seats=["breaker", "grounder"],
+            challenge="The evidence identifies the regression but not its cause or affected segments.",
         ),
         AdjudicatedClaim(
             id="C3",
-            statement="Asynchronous updates will surface blockers within one day.",
-            status=ClaimStatus.DISPUTED,
-            evidence_ids=["E3"],
-            supporting_seats=["breaker", "grounder"],
-            challenge="The only supplied incident shows a warning arriving late; the proposed process is untested.",
+            statement="The release can be reversed inside the required 30-minute window.",
+            status=ClaimStatus.SURVIVED,
+            evidence_ids=["E4"],
+            supporting_seats=["builder"],
+            challenge="Drills may be faster than rollback under live incident pressure.",
         ),
         AdjudicatedClaim(
             id="C4",
-            statement="Written updates will improve spontaneous collaboration.",
-            status=ClaimStatus.UNSUPPORTED,
-            evidence_ids=[],
+            statement="A 10% Friday rollout is safe without active support coverage.",
+            status=ClaimStatus.DISPUTED,
+            evidence_ids=["E2", "E3"],
             supporting_seats=["breaker"],
-            challenge="No supplied evidence measures collaboration quality.",
+            challenge="The evidence shows exposure and absent support, not an acceptable risk threshold.",
+        ),
+        AdjudicatedClaim(
+            id="C5",
+            statement="A 100% release will preserve the beta activation lift.",
+            status=ClaimStatus.UNSUPPORTED,
+            evidence_ids=["E1"],
+            supporting_seats=["builder"],
+            challenge="Beta direction is supported; production-scale effect size is not.",
         ),
     ]
     return DeliberationResult(
@@ -137,16 +174,18 @@ def showcase_result() -> DeliberationResult:
         seats=seats,
         claims=claims,
         surviving_core=(
-            "A reversible trial is justified by the measurable meeting cost and the team’s stated need for focus time. "
-            "The trial should not assume that writing alone makes blockers visible."
+            "The activation upside deserves a controlled production test, while the unexplained "
+            "Android regression and weekend support gap rule out a full Friday release."
         ),
         unresolved_tension=(
-            "Focus time improves only if the team can replace ambient awareness with an explicit, owned escalation path."
+            "A staged rollout creates useful production evidence, but beginning it without support "
+            "coverage exposes users before the team can respond normally."
         ),
         next_test=(
-            "Run the asynchronous update for two weeks. Require blockers to name an owner and deadline, and restore a 15-minute sync if any blocker waits more than one business day for acknowledgement."
+            "Begin a 10% rollout Monday at 9 AM with an Android crash-free stop threshold of 99.0%, "
+            "a named rollback owner, and a review after 500 activated users."
         ),
-        decision="Proceed with a two-week reversible trial with a blocker acknowledgement rule.",
-        evidence_coverage=0.75,
+        decision="Stage the rollout at 10% on Monday; do not release to 100% on Friday.",
+        claim_survival_rate=0.6,
     )
 

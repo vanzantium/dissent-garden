@@ -63,8 +63,8 @@ function beginProcessing(showcase = false) {
   const overlay = $('#processing');
   overlay.classList.remove('hidden');
   const labels = showcase
-    ? ['Loading the prepared decision', 'Replaying independent passes', 'Revealing the evidence trail', 'Opening the ledger']
-    : ['Independent seats are taking root', 'The breaker is testing assumptions', 'The grounder is tracing evidence', 'The arbiter is preserving dissent'];
+    ? ['Loading the prepared decision', 'Replaying role-separated passes', 'Revealing the evidence trail', 'Opening the ledger']
+    : ['Role-separated seats are taking root', 'The breaker is testing assumptions', 'The grounder is tracing evidence', 'The arbiter is preserving dissent'];
   const steps = [...document.querySelectorAll('.processing-steps span')];
   let index = 0;
   $('#processingTitle').textContent = labels[0];
@@ -107,9 +107,10 @@ function renderResult(result) {
   $('#tensionOutput').textContent = result.unresolved_tension;
   $('#testOutput').textContent = result.next_test;
   $('#decisionId').textContent = result.decision_id;
-  $('#resultMode').textContent = result.mode === 'live' ? 'Live deliberation' : 'Showcase dataset';
+  const modeLabels = { live: 'Live deliberation', showcase: 'Showcase dataset', reused: 'Verified receipt reuse' };
+  $('#resultMode').textContent = modeLabels[result.mode] || result.mode;
   $('#resultModel').textContent = result.model;
-  const coverage = Math.round(result.evidence_coverage * 100);
+  const coverage = Math.round(result.claim_survival_rate * 100);
   $('#coverageValue').textContent = `${coverage}%`;
   $('#coverageRing').style.setProperty('--coverage', `${coverage}%`);
   $('#receiptHash').textContent = `SHA-256 ${result.receipt_hash.slice(0, 18)}…`;
@@ -118,7 +119,9 @@ function renderResult(result) {
   $('#governorInput').textContent = Number(governor.input_tokens || 0).toLocaleString();
   $('#governorOutput').textContent = Number(governor.output_tokens || 0).toLocaleString();
   $('#governorSaved').textContent = Number(governor.saved_tokens || 0).toLocaleString();
-  $('#governorNote').textContent = governor.note || 'No prior receipt was relevant.';
+  const contextEstimate = Number(governor.estimated_context_tokens_avoided || 0);
+  $('#governorNote').textContent = (governor.note || 'No prior receipt was relevant.')
+    + (contextEstimate ? ` Estimated context reduction: ${contextEstimate.toLocaleString()} tokens.` : '');
 
   const icons = { builder: '↗', breaker: '⚡', grounder: '⌁' };
   $('#seatGrid').replaceChildren(...result.seats.map((seat) => {

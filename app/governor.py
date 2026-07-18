@@ -22,7 +22,8 @@ class GovernorPlan:
     fingerprint: str
     memory_brief: str
     receipts_consulted: int
-    estimated_saved: int
+    reuse_tokens_avoided: int
+    estimated_context_tokens_avoided: int
     seat_output_cap: int
     arbiter_output_cap: int
     exact_record: dict[str, Any] | None = None
@@ -51,6 +52,7 @@ class TokenGovernor:
             "daily_budget_tokens": self.daily_budget,
             "daily_used_tokens": 0,
             "daily_saved_tokens": 0,
+            "daily_estimated_context_tokens_avoided": 0,
             "lifetime_used_tokens": 0,
             "lifetime_saved_tokens": 0,
             "events": [],
@@ -63,7 +65,11 @@ class TokenGovernor:
             return default
         if state.get("day") != self._today():
             state.update(
-                day=self._today(), daily_used_tokens=0, daily_saved_tokens=0, events=[]
+                day=self._today(),
+                daily_used_tokens=0,
+                daily_saved_tokens=0,
+                daily_estimated_context_tokens_avoided=0,
+                events=[],
             )
         return state
 
@@ -79,8 +85,23 @@ class TokenGovernor:
 
     @staticmethod
     def fingerprint(request: DecisionRequest) -> str:
-        payload = request.model_dump()
-        normalized = json.dumps(payload, sort_keys=True, separators=(",", ":")).lower()
+        def clean(value: str) -> str:
+            return " ".join(value.lower().split())
+
+        payload = {
+            "question": clean(request.question),
+            "context": clean(request.context),
+            "constraints": sorted(clean(item) for item in request.constraints),
+            "evidence": sorted(
+                (
+                    item.id,
+                    clean(item.title),
+                    clean(item.content),
+                )
+                for item in request.evidence
+            ),
+        }
+        normalized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
     @staticmethod
@@ -117,20 +138,35 @@ class TokenGovernor:
             if r.get("kind") == "decision"
             and r.get("payload", {}).get("mode") == "live"
         ]
+        corrections_by_decision: dict[str, list[dict[str, Any]]] = {}
+        for record in records:
+            if record.get("kind") != "correction":
+                continue
+            decision_id = record.get("payload", {}).get("decision_id", "")
+            if decision_id:
+                corrections_by_decision.setdefault(decision_id, []).append(record)
 
         for record in reversed(decision_records):
             payload = record.get("payload", {})
             prior_request = payload.get("request", {})
             prior_fingerprint = payload.get("request_fingerprint")
-            if prior_fingerprint == fingerprint or (
+            is_exact = prior_fingerprint == fingerprint or (
                 prior_request and self.fingerprint(DecisionRequest.model_validate(prior_request)) == fingerprint
-            ):
+            )
+            decision_id = payload.get("decision_id", "")
+            corrections = corrections_by_decision.get(decision_id, [])
+            if is_exact and not corrections:
+                prior_governor = payload.get("result", {}).get("governor", {})
+                actual_prior_tokens = int(prior_governor.get("input_tokens", 0)) + int(
+                    prior_governor.get("output_tokens", 0)
+                )
                 return GovernorPlan(
                     mode=mode,
                     fingerprint=fingerprint,
                     memory_brief="",
                     receipts_consulted=1,
-                    estimated_saved=self.estimate(json.dumps(prior_request)) * 4 + 3200,
+                    reuse_tokens_avoided=actual_prior_tokens,
+                    estimated_context_tokens_avoided=0,
                     seat_output_cap=0,
                     arbiter_output_cap=0,
                     exact_record=record,
@@ -145,7 +181,10 @@ class TokenGovernor:
             prior_result = payload.get("result", {})
             score = self._similarity(current_text, prior_request.get("question", ""))
             if score >= 0.16:
-                raw = json.dumps(payload, ensure_ascii=False)
+                corrections = corrections_by_decision.get(payload.get("decision_id", ""), [])
+                raw = json.dumps(
+                    {"decision": payload, "corrections": corrections}, ensure_ascii=False
+                )
                 raw_tokens += self.estimate(raw)
                 candidates.append((score, record, self.estimate(raw)))
 
@@ -153,26 +192,36 @@ class TokenGovernor:
         lines: list[str] = []
         for score, record, _ in sorted(candidates, key=lambda item: item[0], reverse=True)[:limit]:
             result = record["payload"]["result"]
-            lines.append(
+            line = (
                 f"Receipt {record['record_hash'][:12]} (relevance {score:.2f}): "
                 f"decision={result.get('decision', '')}; "
                 f"unresolved={result.get('unresolved_tension', '')}; "
                 f"next_test={result.get('next_test', '')}"
             )
+            corrections = corrections_by_decision.get(
+                record["payload"].get("decision_id", ""), []
+            )
+            if corrections:
+                notes = " | ".join(
+                    item.get("payload", {}).get("note", "") for item in corrections[-3:]
+                )
+                line += f"; later_corrections={notes}"
+            lines.append(line)
         brief = "\n".join(lines)[:1800]
         brief_tokens = self.estimate(brief) if brief else 0
         caps = {
-            "BUILD": (1200, 1800),
-            "AUDIT": (900, 1400),
-            "DWELL": (700, 1100),
-            "SHED": (550, 900),
+            "BUILD": (1400, 2200),
+            "AUDIT": (1100, 1800),
+            "DWELL": (900, 1500),
+            "SHED": (750, 1200),
         }
         return GovernorPlan(
             mode=mode,
             fingerprint=fingerprint,
             memory_brief=brief,
             receipts_consulted=len(lines),
-            estimated_saved=max(0, raw_tokens - brief_tokens),
+            reuse_tokens_avoided=0,
+            estimated_context_tokens_avoided=max(0, raw_tokens - brief_tokens),
             seat_output_cap=caps[mode][0],
             arbiter_output_cap=caps[mode][1],
         )
@@ -184,14 +233,17 @@ class TokenGovernor:
         input_tokens: int,
         output_tokens: int,
         saved_tokens: int = 0,
+        estimated_context_tokens_avoided: int = 0,
         note: str,
     ) -> GovernorReport:
         with self._lock:
             state = self._state()
             used = max(0, input_tokens) + max(0, output_tokens)
             saved = max(0, saved_tokens)
+            estimated_context = max(0, estimated_context_tokens_avoided)
             state["daily_used_tokens"] += used
             state["daily_saved_tokens"] += saved
+            state["daily_estimated_context_tokens_avoided"] += estimated_context
             state["lifetime_used_tokens"] += used
             state["lifetime_saved_tokens"] += saved
             state["events"].append(
@@ -201,6 +253,7 @@ class TokenGovernor:
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "saved_tokens": saved,
+                    "estimated_context_tokens_avoided": estimated_context,
                     "receipts_consulted": plan.receipts_consulted,
                     "note": note,
                 }
@@ -211,6 +264,7 @@ class TokenGovernor:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             saved_tokens=saved,
+            estimated_context_tokens_avoided=estimated_context,
             receipts_consulted=plan.receipts_consulted,
             note=note,
         )

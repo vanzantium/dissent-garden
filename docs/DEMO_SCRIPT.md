@@ -8,16 +8,17 @@ English voiceover.
 > Most AI decision tools give you one confident answer. Dissent Garden keeps
 > the disagreement you cannot afford to lose.
 
-Show the opening screen and the three principles: independent passes, evidence
+Show the opening screen and the three principles: role-separated passes, evidence
 lineage, append-only memory.
 
 ## 0:18–0:42 — Plant the decision
 
-Load the team-meeting example. Briefly point to:
+Load the staged product-rollout example. Briefly point to:
 
 - the decision;
-- the reversible constraints;
-- three evidence items with stable IDs.
+- the 10% reversible rollout option;
+- five evidence items with stable IDs, including the Android crash regression
+  and the lack of weekend support.
 
 > The model may cite these facts. Anything else must remain inference.
 
@@ -27,7 +28,7 @@ Click **Convene the garden** using a real API key.
 
 > Codex built the complete product and helped us iterate on its API contracts,
 > interface, tests, and failure boundaries. At runtime, GPT-5.6 runs three
-> independent seats in parallel, followed by a fourth adjudication pass.
+> role-separated seats in parallel, followed by a fourth adjudication pass.
 
 Briefly show a Codex build/test clip while the garden animation runs.
 
@@ -36,7 +37,7 @@ Briefly show a Codex build/test clip while the garden animation runs.
 Show:
 
 - the surviving decision;
-- evidence coverage;
+- the claim-survival rate;
 - the Builder, Breaker, and Grounder theses;
 - one claim in each status.
 
@@ -55,12 +56,14 @@ Show the unresolved tension and cheapest next test.
 Show the Governor panel and decision history. Run the exact same decision again.
 
 > The receipt-aware Token Governor prevents memory from becoming context bloat.
-> Exact repeats reuse a verified receipt with zero model calls. Related decisions
+> Exact repeats reuse a verified, correction-free receipt with zero model calls.
+> The displayed saving comes from the original receipt's actual usage. Related decisions
 > receive only a ranked, bounded brief, and the arbiter foregrounds changed
 > evidence or genuinely new dissent. Actual usage and avoided tokens remain
 > visible.
 
-Add a correction.
+Add a correction, then explain that the same decision will no longer reuse the
+stale receipt.
 
 > Corrections append to the chain. The original decision is never silently
 > rewritten.
@@ -71,4 +74,3 @@ Add a correction.
 > instead of merely getting longer.
 
 End on the result board and project URL.
-

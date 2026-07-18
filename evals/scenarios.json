@@ -1,0 +1,37 @@
+[
+  {
+    "id": "rollout",
+    "question": "Should we release the redesigned onboarding flow to 100% of users this Friday?",
+    "context": "A campaign starts Friday, but a staged rollout is available.",
+    "constraints": ["No staffed weekend support", "Rollback must remain possible", "Do not misrepresent availability in the campaign"],
+    "evidence": [
+      {"id": "E1", "title": "Beta activation", "content": "Activation improved 8.2% among 212 invited beta users."},
+      {"id": "E2", "title": "Android stability", "content": "Crash-free sessions fell from 99.4% to 97.8%; the cause is unknown."},
+      {"id": "E3", "title": "Coverage", "content": "No engineer is scheduled for weekend support."},
+      {"id": "E4", "title": "Rollback drills", "content": "The last three rollback drills took 14, 18, and 22 minutes."}
+    ]
+  },
+  {
+    "id": "vendor_migration",
+    "question": "Should the team migrate all customer analytics to the new vendor this quarter?",
+    "context": "The current contract renews in six weeks and dual-writing is possible.",
+    "constraints": ["No loss of historical events", "Enterprise exports must continue", "Migration work is capped at two engineers"],
+    "evidence": [
+      {"id": "E1", "title": "Pilot cost", "content": "The pilot's monthly event cost was 31% lower."},
+      {"id": "E2", "title": "Export gap", "content": "The new vendor does not yet support one enterprise export format used by 7 customers."},
+      {"id": "E3", "title": "Dual-write check", "content": "A two-week dual-write test showed a 0.6% event-count mismatch."}
+    ]
+  },
+  {
+    "id": "incident_process",
+    "question": "Should every production change require synchronous approval from the incident commander for the next month?",
+    "context": "Two recent incidents followed hurried changes, and the team wants a temporary safeguard.",
+    "constraints": ["Emergency rollback cannot wait", "The policy must expire automatically", "Measure operational delay"],
+    "evidence": [
+      {"id": "E1", "title": "Incident review", "content": "Two of the last five incidents followed changes that skipped the normal review checklist."},
+      {"id": "E2", "title": "Approval latency", "content": "Median commander response during business hours is 19 minutes; after-hours data is unavailable."},
+      {"id": "E3", "title": "Change volume", "content": "The service averages 26 production changes per week."}
+    ]
+  }
+]
+

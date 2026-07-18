@@ -54,6 +54,13 @@ class AppendOnlyLedger:
     def records(self) -> list[dict[str, Any]]:
         return self._records()
 
+    def has_decision(self, decision_id: str) -> bool:
+        return any(
+            record.get("kind") == "decision"
+            and record.get("payload", {}).get("decision_id") == decision_id
+            for record in self._records()
+        )
+
     def verify(self) -> dict[str, Any]:
         records = self._records()
         previous_hash = "GENESIS"

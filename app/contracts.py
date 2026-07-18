@@ -63,6 +63,17 @@ class AdjudicatedClaim(BaseModel):
     challenge: str = Field(default="", max_length=420)
 
 
+class GovernorReport(BaseModel):
+    mode: Literal["BUILD", "AUDIT", "DWELL", "SHED"] = "BUILD"
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    saved_tokens: int = Field(default=0, ge=0)
+    estimated_context_tokens_avoided: int = Field(default=0, ge=0)
+    receipts_consulted: int = Field(default=0, ge=0)
+    receipt_reused: str = ""
+    note: str = "No prior receipt was relevant."
+
+
 class DeliberationResult(BaseModel):
     decision_id: str = Field(default_factory=lambda: f"DG-{uuid4().hex[:8].upper()}")
     created_at: str = Field(
@@ -77,20 +88,10 @@ class DeliberationResult(BaseModel):
     unresolved_tension: str = Field(min_length=5, max_length=700)
     next_test: str = Field(min_length=5, max_length=700)
     decision: str = Field(min_length=5, max_length=700)
-    evidence_coverage: float = Field(ge=0, le=1)
-    governor: "GovernorReport" = Field(default_factory=lambda: GovernorReport())
+    claim_survival_rate: float = Field(ge=0, le=1)
+    governor: GovernorReport = Field(default_factory=GovernorReport)
     receipt_hash: str = ""
 
 
 class CorrectionRequest(BaseModel):
     note: str = Field(min_length=5, max_length=1200)
-
-
-class GovernorReport(BaseModel):
-    mode: Literal["BUILD", "AUDIT", "DWELL", "SHED"] = "BUILD"
-    input_tokens: int = Field(default=0, ge=0)
-    output_tokens: int = Field(default=0, ge=0)
-    saved_tokens: int = Field(default=0, ge=0)
-    receipts_consulted: int = Field(default=0, ge=0)
-    receipt_reused: str = ""
-    note: str = "No prior receipt was relevant."

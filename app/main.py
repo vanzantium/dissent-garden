@@ -78,8 +78,12 @@ async def run_deliberation(request: DecisionRequest) -> DeliberationResult:
             plan=plan,
             input_tokens=0,
             output_tokens=0,
-            saved_tokens=plan.estimated_saved,
-            note="Exact decision and evidence match: reused a verified receipt without a GPT-5.6 call.",
+            saved_tokens=plan.reuse_tokens_avoided,
+            estimated_context_tokens_avoided=0,
+            note=(
+                "Exact decision and evidence match: reused a correction-free verified receipt "
+                "without a GPT-5.6 call. Tokens avoided come from that receipt's actual usage."
+            ),
         )
         result.governor.receipt_reused = source["record_hash"]
         reuse = ledger.append(
@@ -88,7 +92,7 @@ async def run_deliberation(request: DecisionRequest) -> DeliberationResult:
                 "decision_id": result.decision_id,
                 "source_receipt": source["record_hash"],
                 "request_fingerprint": plan.fingerprint,
-                "saved_tokens": plan.estimated_saved,
+                "saved_tokens": plan.reuse_tokens_avoided,
             },
         )
         result.receipt_hash = reuse["record_hash"]
@@ -106,7 +110,8 @@ async def run_deliberation(request: DecisionRequest) -> DeliberationResult:
         plan=plan,
         input_tokens=usage[0],
         output_tokens=usage[1],
-        saved_tokens=plan.estimated_saved,
+        saved_tokens=0,
+        estimated_context_tokens_avoided=plan.estimated_context_tokens_avoided,
         note=(
             f"Consulted {plan.receipts_consulted} ranked receipt(s) in a bounded memory brief."
             if plan.receipts_consulted
@@ -128,6 +133,8 @@ async def governor_status() -> dict[str, object]:
 
 @app.post("/api/decisions/{decision_id}/corrections")
 async def add_correction(decision_id: str, correction: CorrectionRequest) -> dict[str, object]:
+    if not ledger.has_decision(decision_id):
+        raise HTTPException(status_code=404, detail="Decision receipt not found")
     record = ledger.append(
         "correction", {"decision_id": decision_id, "note": correction.note}
     )

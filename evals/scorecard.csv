@@ -1,0 +1,1 @@
+scenario_id,reviewer_id,variant,decision_usefulness,evidence_discipline,consequential_risk,preserved_uncertainty,reversibility,unsupported_claims,misrepresented_evidence,constraint_violations,repetitive_dissent,input_tokens,output_tokens,notes

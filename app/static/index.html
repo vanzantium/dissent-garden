@@ -25,11 +25,11 @@
 
   <main>
     <section class="hero" id="hero">
-      <div class="hero-kicker"><span>01</span> An evidence-bound deliberation workspace</div>
+      <div class="hero-kicker"><span>01</span> Decision review for product teams shipping under uncertainty</div>
       <h1>Keep the disagreement<br><em>you cannot afford to lose.</em></h1>
-      <p class="hero-copy">Three independent perspectives examine the same decision. GPT‑5.6 separates what survived, what remains disputed, and what was never supported in the first place.</p>
+      <p class="hero-copy">Turn a messy product decision and its evidence into an auditable decision, preserved dissent, and the next reversible test. Three role-separated GPT‑5.6 passes are generated before adjudication.</p>
       <div class="principle-row" aria-label="Dissent Garden principles">
-        <span>Independent passes</span><b>·</b><span>Evidence lineage</span><b>·</b><span>Append-only memory</span>
+        <span>Role-separated passes</span><b>·</b><span>Evidence lineage</span><b>·</b><span>Append-only memory</span>
       </div>
     </section>
 
@@ -39,7 +39,7 @@
           <span class="section-number">02</span>
           <h2 id="decisionHeading">Plant a decision</h2>
         </div>
-        <button class="sample-link" id="sampleButton" type="button">Use team meeting example ↘</button>
+        <button class="sample-link" id="sampleButton" type="button">Use staged rollout example ↘</button>
       </div>
 
       <form id="decisionForm">
@@ -83,7 +83,7 @@
           <p class="eyebrow">The surviving decision</p>
           <h2 id="decisionOutput"></h2>
         </div>
-        <div class="coverage-ring" id="coverageRing"><span id="coverageValue">0%</span><small>evidence<br>coverage</small></div>
+        <div class="coverage-ring" id="coverageRing"><span id="coverageValue">0%</span><small>claims<br>survived</small></div>
       </div>
 
       <div class="result-meta">
@@ -98,7 +98,7 @@
       </article>
 
       <div class="result-section-heading">
-        <div><span class="section-number">04</span><h3>Independent passes</h3></div>
+        <div><span class="section-number">04</span><h3>Role-separated passes</h3></div>
         <p>Each seat reasoned before seeing the others.</p>
       </div>
       <div class="seat-grid" id="seatGrid"></div>
@@ -130,7 +130,7 @@
         <div class="governor-metric"><span>Governor mode</span><strong id="governorMode">BUILD</strong></div>
         <div class="governor-metric"><span>Input tokens</span><strong id="governorInput">0</strong></div>
         <div class="governor-metric"><span>Output tokens</span><strong id="governorOutput">0</strong></div>
-        <div class="governor-metric"><span>Tokens avoided</span><strong id="governorSaved">0</strong></div>
+        <div class="governor-metric"><span>Model tokens avoided</span><strong id="governorSaved">0</strong></div>
         <div class="governor-note" id="governorNote">No prior receipt was relevant.</div>
       </div>
     </section>
@@ -158,7 +158,7 @@
     <div class="processing-inner">
       <div class="seed-animation"><i></i><i></i><i></i></div>
       <span class="micro-label">The garden is in session</span>
-      <h2 id="processingTitle">Independent seats are taking root</h2>
+      <h2 id="processingTitle">Role-separated seats are taking root</h2>
       <div class="processing-steps">
         <span class="active">Builder</span><span>Breaker</span><span>Grounder</span><span>Arbiter</span>
       </div>
