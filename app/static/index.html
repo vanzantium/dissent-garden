@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Dissent Garden preserves the disagreement you cannot afford to lose.">
+  <title>Dissent Garden — Decisions that survive contact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Dissent Garden home">
+      <span class="brand-mark"><i></i><i></i><i></i></span>
+      <span>Dissent Garden</span>
+    </a>
+    <div class="top-actions">
+      <button class="text-button" id="ledgerButton" type="button">Decision history <span id="ledgerCount">0</span></button>
+      <div class="status-pill" id="apiStatus"><span></span> Checking GPT‑5.6</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-kicker"><span>01</span> An evidence-bound deliberation workspace</div>
+      <h1>Keep the disagreement<br><em>you cannot afford to lose.</em></h1>
+      <p class="hero-copy">Three independent perspectives examine the same decision. GPT‑5.6 separates what survived, what remains disputed, and what was never supported in the first place.</p>
+      <div class="principle-row" aria-label="Dissent Garden principles">
+        <span>Independent passes</span><b>·</b><span>Evidence lineage</span><b>·</b><span>Append-only memory</span>
+      </div>
+    </section>
+
+    <section class="workspace" aria-labelledby="decisionHeading">
+      <div class="workspace-header">
+        <div>
+          <span class="section-number">02</span>
+          <h2 id="decisionHeading">Plant a decision</h2>
+        </div>
+        <button class="sample-link" id="sampleButton" type="button">Use team meeting example ↘</button>
+      </div>
+
+      <form id="decisionForm">
+        <label class="field-label" for="question">The decision</label>
+        <textarea id="question" maxlength="800" required placeholder="What decision needs to survive contact with reality?"></textarea>
+
+        <div class="two-column">
+          <div>
+            <label class="field-label" for="context">Context <small>optional</small></label>
+            <textarea class="compact" id="context" maxlength="3000" placeholder="What does the garden need to understand?"></textarea>
+          </div>
+          <div>
+            <label class="field-label" for="constraints">Constraints <small>one per line</small></label>
+            <textarea class="compact" id="constraints" placeholder="Must be reversible&#10;Budget under $500&#10;Decide by Friday"></textarea>
+          </div>
+        </div>
+
+        <div class="evidence-heading">
+          <div>
+            <span class="field-label">Evidence bed</span>
+            <p>Facts the seats may cite. Anything else must be marked as inference.</p>
+          </div>
+          <button class="add-button" id="addEvidence" type="button"><span>+</span> Add evidence</button>
+        </div>
+        <div id="evidenceList" class="evidence-list"></div>
+
+        <div class="form-footer">
+          <div class="privacy-note"><span>⌁</span> Evidence is sent only to the configured OpenAI API in live mode.</div>
+          <div class="submit-actions">
+            <button class="secondary-button" id="showcaseButton" type="button">Watch showcase</button>
+            <button class="primary-button" id="deliberateButton" type="submit">Convene the garden <span>→</span></button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section class="results hidden" id="results" aria-live="polite">
+      <div class="result-banner">
+        <div>
+          <span class="section-number">03</span>
+          <p class="eyebrow">The surviving decision</p>
+          <h2 id="decisionOutput"></h2>
+        </div>
+        <div class="coverage-ring" id="coverageRing"><span id="coverageValue">0%</span><small>evidence<br>coverage</small></div>
+      </div>
+
+      <div class="result-meta">
+        <span id="decisionId"></span>
+        <span id="resultMode"></span>
+        <span id="resultModel"></span>
+      </div>
+
+      <article class="surviving-card">
+        <div class="card-symbol">✦</div>
+        <div><span>Surviving core</span><p id="survivingCore"></p></div>
+      </article>
+
+      <div class="result-section-heading">
+        <div><span class="section-number">04</span><h3>Independent passes</h3></div>
+        <p>Each seat reasoned before seeing the others.</p>
+      </div>
+      <div class="seat-grid" id="seatGrid"></div>
+
+      <div class="result-section-heading claims-heading">
+        <div><span class="section-number">05</span><h3>What survived contact</h3></div>
+        <div class="claim-legend"><span class="survived-dot">Survived</span><span class="disputed-dot">Disputed</span><span class="unsupported-dot">Unsupported</span></div>
+      </div>
+      <div class="claim-board" id="claimBoard"></div>
+
+      <div class="closing-grid">
+        <article class="tension-card">
+          <span class="micro-label">Unresolved tension</span>
+          <h3 id="tensionOutput"></h3>
+          <p>This is retained as signal—not averaged away.</p>
+        </article>
+        <article class="test-card">
+          <span class="micro-label">Cheapest next test</span>
+          <h3 id="testOutput"></h3>
+          <p>A reversible move designed to produce new evidence.</p>
+        </article>
+      </div>
+
+      <div class="receipt-bar">
+        <div><span class="receipt-icon">✓</span><div><strong>Decision entered into append-only memory</strong><small id="receiptHash"></small></div></div>
+        <button class="text-button" id="correctButton" type="button">Add a correction</button>
+      </div>
+      <div class="governor-strip" id="governorStrip">
+        <div class="governor-metric"><span>Governor mode</span><strong id="governorMode">BUILD</strong></div>
+        <div class="governor-metric"><span>Input tokens</span><strong id="governorInput">0</strong></div>
+        <div class="governor-metric"><span>Output tokens</span><strong id="governorOutput">0</strong></div>
+        <div class="governor-metric"><span>Tokens avoided</span><strong id="governorSaved">0</strong></div>
+        <div class="governor-note" id="governorNote">No prior receipt was relevant.</div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="drawer" id="ledgerDrawer" aria-hidden="true">
+    <div class="drawer-header"><div><span class="micro-label">Append-only memory</span><h2>Decision history</h2></div><button id="closeDrawer" aria-label="Close decision history">×</button></div>
+    <div class="ledger-verification" id="ledgerVerification"></div>
+    <div class="ledger-list" id="ledgerList"></div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <dialog id="correctionDialog">
+    <form method="dialog" id="correctionForm">
+      <button class="dialog-close" value="cancel" aria-label="Close">×</button>
+      <span class="micro-label">Corrections do not erase history</span>
+      <h2>Add what changed</h2>
+      <p>The original decision remains intact. Your correction becomes the next hash-linked record.</p>
+      <textarea id="correctionNote" minlength="5" maxlength="1200" required placeholder="What new evidence or outcome changed the decision?"></textarea>
+      <button class="primary-button" value="default" type="submit">Append correction <span>→</span></button>
+    </form>
+  </dialog>
+
+  <div class="processing hidden" id="processing">
+    <div class="processing-inner">
+      <div class="seed-animation"><i></i><i></i><i></i></div>
+      <span class="micro-label">The garden is in session</span>
+      <h2 id="processingTitle">Independent seats are taking root</h2>
+      <div class="processing-steps">
+        <span class="active">Builder</span><span>Breaker</span><span>Grounder</span><span>Arbiter</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
