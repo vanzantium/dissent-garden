@@ -63,7 +63,10 @@ python -m pip install -r requirements.txt
 If `OPENAI_API_KEY` is not already set, the launcher asks for it at a hidden
 prompt and keeps it only in the server process. Paste the key directly—without
 quotes—and press Enter. The key is not written to disk. You may alternatively
-set `$env:OPENAI_API_KEY` in the same PowerShell session before launching.
+set `$env:OPENAI_API_KEY` in the same PowerShell session before launching. On
+its first run, the launcher creates an ignored project-local `.venv` and installs
+the pinned dependency ranges there, preventing conflicts between system Python
+installations.
 
 Open [http://127.0.0.1:8765](http://127.0.0.1:8765).
 

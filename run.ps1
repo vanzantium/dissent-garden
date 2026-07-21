@@ -2,6 +2,21 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $projectRoot
 
+$venvPython = Join-Path $projectRoot ".venv\Scripts\python.exe"
+if (-not (Test-Path $venvPython)) {
+    Write-Host "Creating the Dissent Garden Python environment..."
+    python -m venv (Join-Path $projectRoot ".venv")
+}
+
+& $venvPython -c "import fastapi, openai, pydantic, uvicorn" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Installing Dissent Garden dependencies..."
+    & $venvPython -m pip install -r (Join-Path $projectRoot "requirements.txt")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Dependency installation failed."
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
     Write-Host "Dissent Garden needs an OpenAI API key for live deliberation."
     Write-Host "Paste the key at the hidden prompt and press Enter. It is kept only for this process."
@@ -20,4 +35,4 @@ if ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
     }
 }
 
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
+& $venvPython -m uvicorn app.main:app --host 127.0.0.1 --port 8765
