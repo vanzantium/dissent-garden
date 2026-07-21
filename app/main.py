@@ -102,9 +102,13 @@ async def run_deliberation(request: DecisionRequest) -> DeliberationResult:
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # SDK errors are normalized at the API boundary.
+        diagnostic = " ".join(str(exc).split())[:700]
         raise HTTPException(
             status_code=502,
-            detail=f"GPT-5.6 deliberation failed: {type(exc).__name__}",
+            detail=(
+                f"GPT-5.6 deliberation failed: {type(exc).__name__}"
+                + (f": {diagnostic}" if diagnostic else "")
+            ),
         ) from exc
     result.governor = governor.record(
         plan=plan,
