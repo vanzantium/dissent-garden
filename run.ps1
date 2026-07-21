@@ -19,19 +19,25 @@ if ($LASTEXITCODE -ne 0) {
 
 if ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
     Write-Host "Dissent Garden needs an OpenAI API key for live deliberation."
-    Write-Host "Paste the key at the hidden prompt and press Enter. It is kept only for this process."
-    $secureKey = Read-Host -Prompt "OpenAI API key" -AsSecureString
-    $keyPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureKey)
+    Write-Host "Copy the API key to your clipboard, return here, and press Enter."
+    Write-Host "The launcher validates the key, transfers it only to this process, then clears the clipboard."
+    Read-Host -Prompt "Press Enter after copying the key" | Out-Null
     try {
-        $plainKey = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($keyPointer)
-        if ([string]::IsNullOrWhiteSpace($plainKey)) {
-            throw "No API key was entered."
+        $plainKey = (Get-Clipboard -Raw).Trim()
+        if (
+            [string]::IsNullOrWhiteSpace($plainKey) -or
+            -not $plainKey.StartsWith("sk-") -or
+            $plainKey.Length -lt 20 -or
+            $plainKey -match "\s"
+        ) {
+            throw "The clipboard does not contain a complete OpenAI API key. Copy the full key and run the launcher again."
         }
-        $env:OPENAI_API_KEY = $plainKey.Trim()
+        $env:OPENAI_API_KEY = $plainKey
+        Write-Host "API key accepted. Clipboard cleared; starting Dissent Garden..."
     }
     finally {
-        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($keyPointer)
-        Remove-Variable secureKey, plainKey -ErrorAction SilentlyContinue
+        Set-Clipboard -Value ""
+        Remove-Variable plainKey -ErrorAction SilentlyContinue
     }
 }
 
