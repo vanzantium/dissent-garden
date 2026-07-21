@@ -2,6 +2,8 @@
 
 > Keep the disagreement you cannot afford to lose.
 
+![Dissent Garden — evidence-bound decisions and budgeted growth](docs/assets/dissent-garden-cover.png)
+
 Dissent Garden is an evidence-bound decision workspace for product and
 engineering teams shipping under uncertainty. Three role-separated GPT-5.6
 passes examine the same decision before an arbiter sees their work:
@@ -26,6 +28,26 @@ Garden makes those boundaries visible:
 3. Unsupported claims cannot be silently promoted as survivors.
 4. Corrections append to history rather than rewriting it.
 5. A Token Governor prevents the ledger itself from becoming context bloat.
+
+## Judge in 60 seconds
+
+No API key is required for the safe judging path:
+
+1. Launch the app and select **Use staged rollout example**.
+2. Select **Watch showcase** to inspect the complete, clearly labeled result.
+3. Review survived, disputed, and unsupported claims plus the unresolved tension.
+4. Plant the loaded decision as a seed, then select **Simulate 30 days**.
+5. Open **Decision history** to verify the append-only receipt chain.
+
+For live evaluation, set `OPENAI_API_KEY` and select **Convene the garden**. The
+same sample was validated end-to-end with GPT-5.6 Sol; the measured run and
+receipt-reuse proof are recorded in
+[`docs/LIVE_TEST_2026-07-21.md`](docs/LIVE_TEST_2026-07-21.md). A more detailed
+test path is in [`docs/JUDGES.md`](docs/JUDGES.md).
+
+| Evidence-bound result | Bounded longitudinal watch |
+| --- | --- |
+| ![Dissent Garden result board](docs/assets/dissent-garden-result.jpg) | ![Plant a Seed nursery](docs/assets/dissent-garden-seed.jpg) |
 
 ## Token Governor
 
@@ -98,6 +120,31 @@ without an API key through the clearly labeled **Watch showcase** path. Showcase
 mode demonstrates the complete UI with a curated dataset; it never claims to be
 a live model response.
 
+### macOS or Linux
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8765
+```
+
+Set `OPENAI_API_KEY` in the same shell before the final command to enable live
+deliberation. Without it, the public-safe showcase remains fully usable.
+
+### Docker or hosted showcase
+
+```bash
+docker build -t dissent-garden .
+docker run --rm -p 8765:8765 dissent-garden
+```
+
+The included `render.yaml` deploys the same showcase-only image on Render's free
+web-service plan. It intentionally omits `OPENAI_API_KEY`, so a public demo
+cannot consume paid model tokens. Add the key as a secret environment variable
+only for a controlled deployment. Render and other hosts may supply `PORT`; the
+container honors it automatically.
+
 ### Configuration
 
 | Environment variable | Default | Purpose |
@@ -110,6 +157,7 @@ a live model response.
 | `DISSENT_GARDEN_API_TIMEOUT_SECONDS` | `90` | Timeout applied by the OpenAI client |
 | `DISSENT_GARDEN_API_MAX_RETRIES` | `2` | SDK retries for transient failures |
 | `DISSENT_GARDEN_SEED_AUTOPILOT_SECONDS` | `60` | Interval for due opt-in auto-bloom seeds |
+| `DISSENT_GARDEN_DATA_DIR` | project `data/` | Writable ledger location for isolated demos or hosted storage |
 
 ## Architecture
 
@@ -182,7 +230,8 @@ testing, and submission package contained here.
 
 ### How Codex was used
 
-Codex was the primary development environment for:
+Codex was the primary development environment and accelerated the project from
+rules analysis through live verification. It was used for:
 
 - product framing and contest-rule analysis;
 - architecture and data-contract design;
@@ -190,6 +239,16 @@ Codex was the primary development environment for:
 - backend, UI, ledger, and Token Governor implementation;
 - automated tests and live browser verification;
 - responsive design review and submission documentation.
+
+The creator made the central product decisions: focus on product and engineering
+teams; reject majority voting; preserve consequential dissent; require stable
+evidence IDs; keep corrections append-only; and make longitudinal monitoring
+fail closed against explicit token and dollar ceilings. Codex challenged those
+choices from the judges', operator's, and end user's perspectives, then helped
+translate them into contracts, validation, tests, and the final interface.
+
+Timestamped commits and a capability-by-capability build record are collected in
+[`docs/CODEX_BUILD_EVIDENCE.md`](docs/CODEX_BUILD_EVIDENCE.md).
 
 The `/feedback` session ID from this primary build task will be added to the
 Devpost submission.

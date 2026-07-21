@@ -1,76 +1,108 @@
-# Three-Minute Demo Script
+# Dissent Garden — Under-Three-Minute Demo
 
-Target length: **2:35–2:50**. The video must be public on YouTube and include
-English voiceover.
+Target finished length: **2:40–2:50**. Record at 1080p with English voiceover.
+The video must be public on YouTube. Do not show an API key, billing page,
+private corpus, third-party logo, personal decision, or copyrighted music.
 
-## 0:00–0:18 — Problem
+## Recording setup
 
-> Most AI decision tools give you one confident answer. Dissent Garden keeps
-> the disagreement you cannot afford to lose.
+1. Use a fresh data directory for an uncluttered ledger:
+   `$env:DISSENT_GARDEN_DATA_DIR="$PWD\data\recording"` on Windows.
+2. Start the app with the API key already in the process environment.
+3. Load the staged rollout example before recording.
+4. Record the live run once, then record the exact receipt-reuse run.
+5. Edit the 40–60 second model wait down to a 3–5 second montage containing a
+   Codex test/build clip. Do not imply that the unedited model latency was five
+   seconds.
+6. Keep browser zoom at 90–100% and close notifications and unrelated tabs.
 
-Show the opening screen and the three principles: role-separated passes, evidence
-lineage, append-only memory.
+## 0:00–0:16 — Hook
 
-## 0:18–0:42 — Plant the decision
+**Screen:** Hero and three principles.
 
-Load the staged product-rollout example. Briefly point to:
+**Voiceover:**
 
-- the decision;
-- the 10% reversible rollout option;
-- five evidence items with stable IDs, including the Android crash regression
-  and the lack of weekend support.
+> Most AI decision tools give a team one confident answer. Dissent Garden keeps
+> the disagreement you cannot afford to lose, binds it to evidence, and turns it
+> into the next reversible test.
 
-> The model may cite these facts. Anything else must remain inference.
+## 0:16–0:36 — Plant a decision
 
-## 0:42–1:05 — GPT-5.6 and Codex
+**Screen:** Scroll through the loaded staged-rollout decision and five evidence
+items. Pause on the Android crash regression and lack of weekend support.
 
-Click **Convene the garden** using a real API key.
+**Voiceover:**
 
-> Codex built the complete product and helped us iterate on its API contracts,
-> interface, tests, and failure boundaries. At runtime, GPT-5.6 runs three
-> role-separated seats in parallel, followed by a fourth adjudication pass.
+> Here is a real product choice: launch onboarding to everyone, or stage it at
+> ten percent. These stable evidence IDs are the only facts the model may cite.
+> Anything else must remain an inference.
 
-Briefly show a Codex build/test clip while the garden animation runs.
+## 0:36–0:58 — Codex and GPT-5.6
 
-## 1:05–1:38 — The result
+**Screen:** Select **Convene the garden**. Cut the wait to a brief montage of the
+four processing stages plus Codex running the tests.
 
-Show:
+**Voiceover:**
 
-- the surviving decision;
-- the claim-survival rate;
-- the Builder, Breaker, and Grounder theses;
-- one claim in each status.
+> Codex helped build and verify the entire product: contracts, interface,
+> failure boundaries, browser QA, and seventeen tests. At runtime, GPT-5.6 Sol
+> runs Builder, Breaker, and Grounder in isolation and in parallel. A fourth
+> GPT-5.6 pass adjudicates only after all three are complete.
 
-> Dissent Garden does not vote. A supported claim can survive, a live conflict
-> stays disputed, and a persuasive claim without evidence is marked unsupported.
+## 0:58–1:30 — Evidence-bound result
 
-## 1:38–2:02 — What makes it different
+**Screen:** Show the surviving decision, seat theses, and one claim in each
+status. Finish on unresolved tension and the cheapest next test.
 
-Show the unresolved tension and cheapest next test.
+**Voiceover:**
 
-> The system preserves the most important tension and turns it into a reversible
-> experiment, instead of smoothing it into false consensus.
+> Dissent Garden does not vote. Supported claims can survive, live conflicts
+> stay disputed, and persuasive claims without supplied evidence are demoted to
+> unsupported by the server. The product preserves the most consequential
+> tension and proposes the cheapest experiment that could change the decision.
 
-## 2:02–2:28 — Token Governor and receipts
+## 1:30–1:57 — Receipt-aware memory
 
-Show the Governor panel and decision history. Run the exact same decision again.
+**Screen:** Show the Governor and open decision history. Run the exact decision
+again and show `reused`, zero new tokens, and the source receipt.
 
-> The receipt-aware Token Governor prevents memory from becoming context bloat.
-> Exact repeats reuse a verified, correction-free receipt with zero model calls.
-> The displayed saving comes from the original receipt's actual usage. Related decisions
-> receive only a ranked, bounded brief, and the arbiter foregrounds changed
-> evidence or genuinely new dissent. Actual usage and avoided tokens remain
-> visible.
+**Voiceover:**
 
-Add a correction, then explain that the same decision will no longer reuse the
-stale receipt.
+> The receipt-aware Governor keeps memory from becoming context bloat. This
+> exact repeat reuses a verified, correction-free receipt with zero GPT-5.6
+> calls. The original live run used 6,766 tokens; the repeat avoids all 6,766.
+> A correction appends to history and invalidates stale reuse instead of
+> rewriting the past.
 
-> Corrections append to the chain. The original decision is never silently
-> rewritten.
+## 1:57–2:29 — Plant a Seed
 
-## 2:28–2:45 — Close
+**Screen:** Return to Plant a Seed. Show the one-dollar cap and auto-bloom
+boundary, plant the loaded decision, then select **Simulate 30 days**.
 
-> Dissent Garden: decisions that survive contact—and memory that gets tighter
-> instead of merely getting longer.
+**Voiceover:**
 
-End on the result board and project URL.
+> Plant a Seed turns the decision into a bounded living watch. Local checks stay
+> free while reality is repetitive and tighten their wake threshold after
+> noise. Material contradictions wake the seed. Before any model work, the seed
+> must reserve its worst-case cost against both its own dollar ceiling and the
+> global token budget. In this thirty-day simulation, twenty-six checks slept,
+> five woke, none were false wakes, and no budget was breached.
+
+## 2:29–2:47 — Close
+
+**Screen:** Frame the result board, verified ledger, and nursery together. End on
+the project name and public URL.
+
+**Voiceover:**
+
+> Dissent Garden is an evidence-bound decision workspace for teams shipping
+> under uncertainty: disagreement that remains useful, memory that gets tighter,
+> and agents that must earn the right to spend again.
+
+## Final edit check
+
+- Runtime is under 3:00; ideal is 2:40–2:50.
+- The product is visible and legible at normal YouTube playback size.
+- The spoken audio explicitly names both Codex and GPT-5.6.
+- The YouTube upload is set to **Public**.
+- The closing URL exactly matches the Devpost testing URL.

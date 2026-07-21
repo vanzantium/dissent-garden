@@ -28,9 +28,11 @@ from .seeds import SeedRegistry, simulate_growth
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "app" / "static"
-ledger = AppendOnlyLedger(ROOT / "data" / "decision_ledger.jsonl")
-governor = TokenGovernor(ROOT / "data" / "governor_state.json")
-seed_registry = SeedRegistry(ROOT / "data" / "seed_ledger.jsonl")
+DATA_DIR = Path(os.getenv("DISSENT_GARDEN_DATA_DIR", str(ROOT / "data"))).resolve()
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+ledger = AppendOnlyLedger(DATA_DIR / "decision_ledger.jsonl")
+governor = TokenGovernor(DATA_DIR / "governor_state.json")
+seed_registry = SeedRegistry(DATA_DIR / "seed_ledger.jsonl")
 SEED_AUTOPILOT_SECONDS = max(
     15, int(os.getenv("DISSENT_GARDEN_SEED_AUTOPILOT_SECONDS", "60"))
 )
@@ -75,7 +77,7 @@ async def lifespan(_: FastAPI):
             await task
 
 
-app = FastAPI(title="Dissent Garden", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Dissent Garden", version="1.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 

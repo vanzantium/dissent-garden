@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: dissent-garden
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: DISSENT_GARDEN_MODEL
+        value: gpt-5.6-sol
+      - key: DISSENT_GARDEN_DAILY_TOKEN_BUDGET
+        value: "100000"
+      - key: DISSENT_GARDEN_SEED_AUTOPILOT_SECONDS
+        value: "60"
+
+# The public deployment intentionally omits OPENAI_API_KEY. It runs the complete,
+# clearly labeled showcase without exposing a paid credential. Judges can clone
+# the repository and set their own key to exercise live GPT-5.6 deliberation.
