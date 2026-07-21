@@ -57,9 +57,13 @@ Requires Python 3.11+.
 
 ```powershell
 python -m pip install -r requirements.txt
-$env:OPENAI_API_KEY="your-key"
 .\run.ps1
 ```
+
+If `OPENAI_API_KEY` is not already set, the launcher asks for it at a hidden
+prompt and keeps it only in the server process. Paste the key directly—without
+quotes—and press Enter. The key is not written to disk. You may alternatively
+set `$env:OPENAI_API_KEY` in the same PowerShell session before launching.
 
 Open [http://127.0.0.1:8765](http://127.0.0.1:8765).
 
