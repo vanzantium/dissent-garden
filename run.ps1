@@ -36,7 +36,7 @@ if ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
         Write-Host "API key accepted. Clipboard cleared; starting Dissent Garden..."
     }
     finally {
-        Set-Clipboard -Value ""
+        Set-Clipboard -Value "Clipboard cleared by Dissent Garden."
         Remove-Variable plainKey -ErrorAction SilentlyContinue
     }
 }
