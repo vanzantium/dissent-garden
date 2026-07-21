@@ -104,7 +104,14 @@ async def run_deliberation(request: DecisionRequest) -> DeliberationResult:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # SDK errors are normalized at the API boundary.
         body = getattr(exc, "body", None)
-        diagnostic_source = (
+        response = getattr(exc, "response", None)
+        response_detail = ""
+        if response is not None:
+            try:
+                response_detail = json.dumps(response.json(), ensure_ascii=False)
+            except Exception:
+                response_detail = getattr(response, "text", "") or ""
+        diagnostic_source = response_detail or (
             json.dumps(body, ensure_ascii=False) if body else str(exc)
         )
         diagnostic = " ".join(diagnostic_source.split())[:1000]
