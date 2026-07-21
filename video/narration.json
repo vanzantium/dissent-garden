@@ -1,0 +1,72 @@
+[
+  {
+    "id": "01-hook",
+    "label": "DISSENT GARDEN",
+    "title": "Keep the disagreement you cannot afford to lose.",
+    "visual": "cover",
+    "narration": "Most AI decision tools give a team one confident answer. Dissent Garden keeps the disagreement you cannot afford to lose, binds every claim to supplied evidence, and turns uncertainty into the next reversible test."
+  },
+  {
+    "id": "02-evidence",
+    "label": "PLANT A DECISION",
+    "title": "The model may cite these facts. Anything else remains inference.",
+    "visual": "evidence",
+    "narration": "Here is a product choice: launch a new onboarding flow to everyone, or stage it at ten percent. The evidence includes an activation lift, an unexplained Android crash regression, no weekend support, successful rollback drills, and a flexible campaign. Each fact has a stable evidence ID."
+  },
+  {
+    "id": "03-orchestration",
+    "label": "BUILT WITH CODEX · RUNS ON GPT-5.6 SOL",
+    "title": "Three isolated seats. One evidence-bound arbiter.",
+    "visual": "architecture",
+    "narration": "Codex helped build and verify the complete product: contracts, interface, failure boundaries, browser quality assurance, and seventeen automated tests. At runtime, GPT-5.6 Sol runs Builder, Breaker, and Grounder in isolation and in parallel. A fourth GPT-5.6 pass adjudicates only after all three are complete."
+  },
+  {
+    "id": "04-decision",
+    "label": "THE SURVIVING DECISION",
+    "title": "Stage the rollout. Do not manufacture consensus.",
+    "visual": "result",
+    "narration": "The result is not a vote. Dissent Garden recommends a ten percent Monday stage, not a full Friday release. It preserves the activation upside while refusing to ignore the Android reliability regression and the weekend support gap."
+  },
+  {
+    "id": "05-seats",
+    "label": "ROLE-SEPARATED PASSES",
+    "title": "Builder proposes. Breaker attacks. Grounder audits.",
+    "visual": "seats",
+    "narration": "Each seat has a different obligation. Builder finds the strongest bounded proposal. Breaker exposes failure modes and displaced cost. Grounder audits the reasoning against the supplied evidence. They cannot imitate agreement because they do not see one another before completing their passes."
+  },
+  {
+    "id": "06-claims",
+    "label": "WHAT SURVIVED CONTACT",
+    "title": "Survived · disputed · unsupported",
+    "visual": "claims",
+    "narration": "The arbiter separates atomic claims into survived, disputed, and unsupported. Structured output is not enough by itself, so the server allowlists every evidence ID and demotes evidence-free survivor claims. A persuasive model response cannot silently invent support."
+  },
+  {
+    "id": "07-next-test",
+    "label": "DISSENT BECOMES ACTION",
+    "title": "Preserve the tension. Name the cheapest test.",
+    "visual": "closing",
+    "narration": "The unresolved tension stays visible instead of being averaged away. Then the system names the cheapest reversible test: a staffed ten percent rollout with an Android stop threshold, a rollback owner, and a review after five hundred activated users."
+  },
+  {
+    "id": "08-receipts",
+    "label": "RECEIPT-AWARE MEMORY",
+    "title": "Memory gets tighter instead of merely getting longer.",
+    "visual": "receipt",
+    "narration": "Every decision enters a hash-chained append-only ledger. The live GPT-5.6 sample used six thousand seven hundred sixty-six tokens and cost about eleven cents. Repeating the exact untouched decision then reused its verified receipt in eighty-four milliseconds, with zero model calls and all six thousand seven hundred sixty-six tokens avoided. Corrections invalidate stale reuse without rewriting history."
+  },
+  {
+    "id": "09-seed",
+    "label": "PLANT A SEED",
+    "title": "Plant once. Spend only when reality changes.",
+    "visual": "seed",
+    "narration": "Plant a Seed turns one decision into a bounded living watch. Local checks stay free while evidence is repetitive and tighten their wake threshold after noise. Material contradictions wake the seed. Before model work begins, the system must reserve its worst-case cost against both the seed's dollar ceiling and the global token budget. In this thirty-day simulation, twenty-six checks slept, five woke, none were false wakes, and no budget was breached."
+  },
+  {
+    "id": "10-close",
+    "label": "DISSENT GARDEN",
+    "title": "Evidence-bound decisions that survive contact with reality.",
+    "visual": "close",
+    "narration": "Dissent Garden is a decision workspace for teams shipping under uncertainty: disagreement that remains useful, evidence that stays inspectable, memory that gets tighter, and agents that must earn the right to spend again."
+  }
+]

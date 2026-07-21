@@ -1,0 +1,164 @@
+1
+00:00:00,000 --> 00:00:03,359
+Most AI decision tools give a team one confident answer.
+
+2
+00:00:03,359 --> 00:00:11,422
+Dissent Garden keeps the disagreement you cannot afford to
+lose, binds every claim to supplied evidence, and turns
+uncertainty into the next reversible test.
+
+3
+00:00:11,422 --> 00:00:17,981
+Here is a product choice: launch a new onboarding flow to
+everyone, or stage it at ten percent.
+
+4
+00:00:17,981 --> 00:00:25,633
+The evidence includes an activation lift, an unexplained
+Android crash regression, no weekend support, successful
+rollback drills, and a flexible campaign.
+
+5
+00:00:25,633 --> 00:00:28,184
+Each fact has a stable evidence ID.
+
+6
+00:00:28,184 --> 00:00:36,414
+Codex helped build and verify the complete product: contracts,
+interface, failure boundaries, browser quality assurance, and
+seventeen automated tests.
+
+7
+00:00:36,414 --> 00:00:37,714
+At runtime, GPT-5.
+
+8
+00:00:37,714 --> 00:00:42,912
+6 Sol runs Builder, Breaker, and Grounder in isolation and in
+parallel.
+
+9
+00:00:42,912 --> 00:00:44,211
+A fourth GPT-5.
+
+10
+00:00:44,211 --> 00:00:48,110
+6 pass adjudicates only after all three are complete.
+
+11
+00:00:48,110 --> 00:00:50,096
+The result is not a vote.
+
+12
+00:00:50,096 --> 00:00:54,401
+Dissent Garden recommends a ten percent Monday stage, not a
+full Friday release.
+
+13
+00:00:54,401 --> 00:01:00,362
+It preserves the activation upside while refusing to ignore
+the Android reliability regression and the weekend support
+gap.
+
+14
+00:01:00,362 --> 00:01:02,586
+Each seat has a different obligation.
+
+15
+00:01:02,586 --> 00:01:04,809
+Builder finds the strongest bounded proposal.
+
+16
+00:01:04,809 --> 00:01:07,404
+Breaker exposes failure modes and displaced cost.
+
+17
+00:01:07,404 --> 00:01:10,369
+Grounder audits the reasoning against the supplied evidence.
+
+18
+00:01:10,369 --> 00:01:15,929
+They cannot imitate agreement because they do not see one
+another before completing their passes.
+
+19
+00:01:15,929 --> 00:01:19,848
+The arbiter separates atomic claims into survived, disputed,
+and unsupported.
+
+20
+00:01:19,848 --> 00:01:27,295
+Structured output is not enough by itself, so the server
+allowlists every evidence ID and demotes evidence-free
+survivor claims.
+
+21
+00:01:27,295 --> 00:01:30,430
+A persuasive model response cannot silently invent support.
+
+22
+00:01:30,430 --> 00:01:33,709
+The unresolved tension stays visible instead of being averaged
+away.
+
+23
+00:01:33,709 --> 00:01:43,217
+Then the system names the cheapest reversible test: a staffed
+ten percent rollout with an Android stop threshold, a rollback
+owner, and a review after five hundred activated users.
+
+24
+00:01:43,217 --> 00:01:45,818
+Every decision enters a hash-chained append-only ledger.
+
+25
+00:01:45,818 --> 00:01:46,933
+The live GPT-5.
+
+26
+00:01:46,933 --> 00:01:52,135
+6 sample used six thousand seven hundred sixty-six tokens and
+cost about eleven cents.
+
+27
+00:01:52,135 --> 00:02:01,796
+Repeating the exact untouched decision then reused its
+verified receipt in eighty-four milliseconds, with zero model
+calls and all six thousand seven hundred sixty-six tokens
+avoided.
+
+28
+00:02:01,796 --> 00:02:04,397
+Corrections invalidate stale reuse without rewriting history.
+
+29
+00:02:04,397 --> 00:02:08,079
+Plant a Seed turns one decision into a bounded living watch.
+
+30
+00:02:08,079 --> 00:02:13,100
+Local checks stay free while evidence is repetitive and
+tighten their wake threshold after noise.
+
+31
+00:02:13,100 --> 00:02:14,773
+Material contradictions wake the seed.
+
+32
+00:02:14,773 --> 00:02:22,137
+Before model work begins, the system must reserve its worst-
+case cost against both the seed's dollar ceiling and the
+global token budget.
+
+33
+00:02:22,137 --> 00:02:28,162
+In this thirty-day simulation, twenty-six checks slept, five
+woke, none were false wakes, and no budget was breached.
+
+34
+00:02:28,162 --> 00:02:39,005
+Dissent Garden is a decision workspace for teams shipping
+under uncertainty: disagreement that remains useful, evidence
+that stays inspectable, memory that gets tighter, and agents
+that must earn the right to spend again.
