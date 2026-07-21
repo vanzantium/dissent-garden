@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.contracts import DecisionRequest, EvidenceItem
@@ -13,14 +15,26 @@ from app.governor import TokenGovernor
 from app import engine
 
 
+main_module = importlib.import_module("app.main")
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolated_runtime(monkeypatch, tmp_path: Path) -> None:
+    """Keep automated tests from reading or writing the real demo ledger."""
+    monkeypatch.setattr(
+        main_module, "ledger", AppendOnlyLedger(tmp_path / "decision_ledger.jsonl")
+    )
+    monkeypatch.setattr(
+        main_module, "governor", TokenGovernor(tmp_path / "governor_state.json")
+    )
 
 
 def test_health_and_front_door() -> None:
     assert client.get("/").status_code == 200
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.json()["model"] == "gpt-5.6"
+    assert response.json()["model"] == "gpt-5.6-sol"
 
 
 def test_showcase_is_complete() -> None:
@@ -207,14 +221,15 @@ def test_live_pipeline_uses_four_structured_calls(monkeypatch, tmp_path: Path) -
     class Response:
         def __init__(self, payload: dict) -> None:
             self.output_text = json.dumps(payload)
+            self.output_parsed = None
             self.usage = Usage()
 
     class Responses:
-        async def create(self, **kwargs):
-            name = kwargs["text"]["format"]["name"]
+        async def parse(self, **kwargs):
+            name = kwargs["metadata"]["dissent_stage"]
             calls.append(name)
             if name.endswith("_pass"):
-                return Response(
+                response = Response(
                     {
                         "thesis": "A sufficiently detailed independent thesis for the test.",
                         "claims": [
@@ -224,7 +239,11 @@ def test_live_pipeline_uses_four_structured_calls(monkeypatch, tmp_path: Path) -
                         "question_for_others": "What result would reverse this decision?",
                     }
                 )
-            return Response(
+                response.output_parsed = engine.SeatCallResult.model_validate(
+                    json.loads(response.output_text)
+                )
+                return response
+            response = Response(
                 {
                     "claims": [
                         {"id": "C1", "statement": "A bounded trial is supported.", "status": "survived", "evidence_ids": ["E1"], "supporting_seats": ["builder", "grounder"], "challenge": "The sample is small."},
@@ -237,6 +256,10 @@ def test_live_pipeline_uses_four_structured_calls(monkeypatch, tmp_path: Path) -
                     "decision": "Proceed with a one-week reversible test.",
                 }
             )
+            response.output_parsed = engine.ArbiterCallResult.model_validate(
+                json.loads(response.output_text)
+            )
+            return response
 
     class FakeClient:
         def __init__(self, **kwargs) -> None:

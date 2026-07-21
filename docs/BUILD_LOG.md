@@ -28,6 +28,10 @@ record; this file provides the human-readable narrative required for judging.
   of actual token savings from estimated context reduction.
 - Replaced the generic meeting showcase with a staged product-rollout decision
   and added a preregistered blind comparison plan with fixed evaluation assets.
+- **July 21** — Completed the first real GPT-5.6 Sol four-call deliberation:
+  3,769 input tokens, 2,997 output tokens, 46.83 seconds, and a valid live receipt.
+  Repeated the exact request in 84 ms with zero model calls and 6,766 actual prior
+  tokens avoided. See `docs/LIVE_TEST_2026-07-21.md` for the transparent record.
 
 ## Evidence to retain for submission
 

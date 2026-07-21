@@ -41,4 +41,4 @@ if ([string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY)) {
     }
 }
 
-& $venvPython -m uvicorn app.main:app --host 127.0.0.1 --port 8765 --reload
+& $venvPython -m uvicorn app.main:app --host 127.0.0.1 --port 8765

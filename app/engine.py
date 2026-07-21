@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-from typing import Any
+from typing import Any, Literal
 
 from openai import AsyncOpenAI
+from pydantic import BaseModel, Field
 
 from .contracts import (
     AdjudicatedClaim,
@@ -18,7 +19,7 @@ from .contracts import (
 from .governor import GovernorPlan
 
 
-MODEL = os.getenv("DISSENT_GARDEN_MODEL", "gpt-5.6")
+MODEL = os.getenv("DISSENT_GARDEN_MODEL", "gpt-5.6-sol")
 API_TIMEOUT_SECONDS = float(os.getenv("DISSENT_GARDEN_API_TIMEOUT_SECONDS", "90"))
 API_MAX_RETRIES = int(os.getenv("DISSENT_GARDEN_API_MAX_RETRIES", "2"))
 SEATS = ("builder", "breaker", "grounder")
@@ -29,83 +30,34 @@ SEAT_INSTRUCTIONS = {
     "grounder": "Audit every important claim against the supplied evidence and constraints. Separate fact, inference, and missing evidence.",
 }
 
-SEAT_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "additionalProperties": False,
-    "required": ["thesis", "claims", "question_for_others"],
-    "properties": {
-        "thesis": {"type": "string"},
-        "claims": {
-            "type": "array",
-            "minItems": 2,
-            "maxItems": 6,
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": ["statement", "evidence_ids", "confidence"],
-                "properties": {
-                    "statement": {"type": "string"},
-                    "evidence_ids": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "maxItems": 6,
-                    },
-                    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
-                },
-            },
-        },
-        "question_for_others": {"type": "string"},
-    },
-}
 
-ARBITER_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "additionalProperties": False,
-    "required": [
-        "claims",
-        "surviving_core",
-        "unresolved_tension",
-        "next_test",
-        "decision",
-    ],
-    "properties": {
-        "claims": {
-            "type": "array",
-            "minItems": 3,
-            "maxItems": 10,
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": [
-                    "id",
-                    "statement",
-                    "status",
-                    "evidence_ids",
-                    "supporting_seats",
-                    "challenge",
-                ],
-                "properties": {
-                    "id": {"type": "string"},
-                    "statement": {"type": "string"},
-                    "status": {
-                        "type": "string",
-                        "enum": ["survived", "disputed", "unsupported"],
-                    },
-                    "evidence_ids": {"type": "array", "items": {"type": "string"}},
-                    "supporting_seats": {
-                        "type": "array",
-                        "items": {"type": "string", "enum": list(SEATS)},
-                    },
-                    "challenge": {"type": "string"},
-                },
-            },
-        },
-        "surviving_core": {"type": "string"},
-        "unresolved_tension": {"type": "string"},
-        "next_test": {"type": "string"},
-        "decision": {"type": "string"},
-    },
-}
+class SeatCallClaim(BaseModel):
+    statement: str
+    evidence_ids: list[str] = Field(max_length=6)
+    confidence: float = Field(ge=0, le=1)
+
+
+class SeatCallResult(BaseModel):
+    thesis: str
+    claims: list[SeatCallClaim] = Field(min_length=2, max_length=6)
+    question_for_others: str
+
+
+class ArbiterCallClaim(BaseModel):
+    id: str
+    statement: str
+    status: Literal["survived", "disputed", "unsupported"]
+    evidence_ids: list[str]
+    supporting_seats: list[Literal["builder", "breaker", "grounder"]]
+    challenge: str
+
+
+class ArbiterCallResult(BaseModel):
+    claims: list[ArbiterCallClaim] = Field(min_length=3, max_length=10)
+    surviving_core: str
+    unresolved_tension: str
+    next_test: str
+    decision: str
 
 
 def _request_text(request: DecisionRequest) -> str:
@@ -127,30 +79,31 @@ async def _structured_call(
     instructions: str,
     input_text: str,
     schema_name: str,
-    schema: dict[str, Any],
+    response_model: type[BaseModel],
     max_output_tokens: int,
 ) -> tuple[dict[str, Any], tuple[int, int]]:
-    response = await client.responses.create(
+    response = await client.responses.parse(
         model=MODEL,
         reasoning={"effort": "low"},
         instructions=instructions,
         input=input_text,
         max_output_tokens=max_output_tokens,
-        text={
-            "format": {
-                "type": "json_schema",
-                "name": schema_name,
-                "strict": True,
-                "schema": schema,
-            }
-        },
+        text_format=response_model,
+        metadata={"dissent_stage": schema_name},
     )
     usage = getattr(response, "usage", None)
     token_usage = (
         int(getattr(usage, "input_tokens", 0) or 0),
         int(getattr(usage, "output_tokens", 0) or 0),
     )
-    return json.loads(response.output_text), token_usage
+    parsed = response.output_parsed
+    if parsed is None:
+        status = getattr(response, "status", "unknown")
+        details = getattr(response, "incomplete_details", None)
+        raise RuntimeError(
+            f"Structured response was not parseable (status={status}, details={details})."
+        )
+    return parsed.model_dump(), token_usage
 
 
 async def _run_seat(
@@ -167,7 +120,7 @@ async def _run_seat(
         ),
         input_text=_request_text(request),
         schema_name=f"{seat}_pass",
-        schema=SEAT_SCHEMA,
+        response_model=SeatCallResult,
         max_output_tokens=output_cap,
     )
     claims = [
@@ -228,7 +181,7 @@ async def deliberate(
         ),
         input_text=arbiter_input,
         schema_name="dissent_garden_verdict",
-        schema=ARBITER_SCHEMA,
+        response_model=ArbiterCallResult,
         max_output_tokens=plan.arbiter_output_cap,
     )
     input_tokens += arbiter_usage[0]

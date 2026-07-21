@@ -81,7 +81,7 @@ a live model response.
 | Environment variable | Default | Purpose |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | none | Enables live deliberation |
-| `DISSENT_GARDEN_MODEL` | `gpt-5.6` | Runtime model; keep GPT-5.6 for Build Week |
+| `DISSENT_GARDEN_MODEL` | `gpt-5.6-sol` | Explicit GPT-5.6 Sol runtime model for Build Week |
 | `DISSENT_GARDEN_DAILY_TOKEN_BUDGET` | `100000` | Local Governor threshold |
 | `DISSENT_GARDEN_API_TIMEOUT_SECONDS` | `90` | Timeout applied by the OpenAI client |
 | `DISSENT_GARDEN_API_MAX_RETRIES` | `2` | SDK retries for transient failures |
