@@ -51,6 +51,28 @@ The receipt-aware Governor is part of the product, not a future optimization.
 
 This is bounded, auditable compression—not an ever-growing hidden summary.
 
+## Plant a Seed
+
+A seed turns one decision into a bounded longitudinal watch. It stores a dollar
+ceiling, expiry, check rhythm, evidence versions, wake/sleep history, and every
+budget reservation in a separate hash-chained event ledger.
+
+- Local checks use deterministic novelty, relevance, and contradiction signals
+  and make no OpenAI request.
+- Exact duplicate evidence is rejected because repetition is not new evidence.
+- Quiet checks raise the future wake threshold; relevant contradictory evidence
+  can wake the seed immediately.
+- A fresh GPT-5.6 bloom must reserve its conservative worst-case token and USD
+  exposure against both the global daily budget and the seed budget before the
+  first provider call.
+- Auto-bloom is opt-in and operates only while this local server and its
+  environment-held API key remain active. It never gathers external evidence or
+  performs external actions.
+- Harvesting stops the seed while preserving its full event history.
+
+The nursery includes a zero-API 30-day simulator for testing false wakes,
+budget breaches, spend, sleeps, and hash-chain validity.
+
 ## Quick start
 
 Requires Python 3.11+.
@@ -82,15 +104,21 @@ a live model response.
 | --- | --- | --- |
 | `OPENAI_API_KEY` | none | Enables live deliberation |
 | `DISSENT_GARDEN_MODEL` | `gpt-5.6-sol` | Explicit GPT-5.6 Sol runtime model for Build Week |
+| `DISSENT_GARDEN_INPUT_USD_PER_MILLION` | model default (`5` for Sol) | Input rate used by hard USD reservations |
+| `DISSENT_GARDEN_OUTPUT_USD_PER_MILLION` | model default (`30` for Sol) | Output rate used by hard USD reservations |
 | `DISSENT_GARDEN_DAILY_TOKEN_BUDGET` | `100000` | Local Governor threshold |
 | `DISSENT_GARDEN_API_TIMEOUT_SECONDS` | `90` | Timeout applied by the OpenAI client |
 | `DISSENT_GARDEN_API_MAX_RETRIES` | `2` | SDK retries for transient failures |
+| `DISSENT_GARDEN_SEED_AUTOPILOT_SECONDS` | `60` | Interval for due opt-in auto-bloom seeds |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     D[Decision + constraints + evidence] --> G[Token Governor]
+    S[Planted seed + evidence deltas] --> W[Deterministic wake gate]
+    W -->|quiet| Q[Sleep with stronger backoff]
+    W -->|material| G
     G -->|exact fingerprint| R[Reuse verified receipt]
     G -->|fresh or changed| B[Builder]
     G --> K[Breaker]
@@ -121,6 +149,11 @@ evidence-free survivors to unsupported.
 | `GET /api/ledger` | Verified append-only decision history |
 | `GET /api/governor` | Token budget, usage, savings, and recent events |
 | `POST /api/decisions/{id}/corrections` | Append a correction without erasing history |
+| `GET/POST /api/seeds` | List or plant bounded living decisions |
+| `POST /api/seeds/{id}/evidence` | Append a versioned observation |
+| `POST /api/seeds/{id}/check` | Check locally or bloom if the gate wakes |
+| `POST /api/seeds/{id}/harvest` | Stop work without erasing seed history |
+| `POST /api/seeds/simulate` | Run the deterministic longitudinal harness |
 
 ## Verification
 
@@ -133,7 +166,9 @@ node --check app\static\app.js
 The tests cover the front door, showcase contract, missing-key boundary,
 evidence-ID validation, hash-chain tamper detection, correction-aware live-only
 receipt reuse, canonical fingerprints, bounded memory compaction, Governor
-accounting, and orphan-correction rejection.
+accounting, orphan-correction rejection, hard reservation denial, seed
+deduplication, material wake-ups, zero-cost checks, and longitudinal budget
+safety.
 
 ## OpenAI Build Week disclosure
 

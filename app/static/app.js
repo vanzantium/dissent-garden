@@ -1,4 +1,4 @@
-const state = { evidenceCount: 0, result: null, processingTimer: null };
+const state = { evidenceCount: 0, result: null, processingTimer: null, seeds: [] };
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, className) => { const node = document.createElement(tag); if (className) node.className = className; return node; };
 
@@ -44,6 +44,153 @@ function requestFromForm() {
     constraints: $('#constraints').value.split('\n').map(v => v.trim()).filter(Boolean),
     evidence,
   };
+}
+
+function seedPayloadFromForm() {
+  return {
+    ...requestFromForm(),
+    budget_usd: Number($('#seedBudget').value),
+    duration_days: Number($('#seedDuration').value),
+    check_interval_hours: Number($('#seedInterval').value),
+    auto_bloom: $('#seedAutoBloom').checked,
+  };
+}
+
+async function plantSeed(event) {
+  event.preventDefault();
+  const payload = seedPayloadFromForm();
+  if (!payload.question) return toast('Plant the decision above before creating a seed.');
+  try {
+    const response = await fetch('/api/seeds', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'The seed could not be planted.');
+    await refreshSeeds();
+    toast(`${data.seed.seed_id} planted with a $${data.seed.budget_usd.toFixed(2)} ceiling.`);
+  } catch (error) { toast(error.message); }
+}
+
+function seedStatusLabel(status, assessment = null) {
+  if (status === 'sprouting' && assessment?.reason?.startsWith('Initial baseline')) return 'Baseline ready';
+  return ({ dormant: 'Dormant', sprouting: 'Material change found', growing: 'Blooming', shed: 'Budget or lifetime ended', harvested: 'Harvested' })[status] || status;
+}
+
+function renderSeeds(seeds) {
+  state.seeds = seeds;
+  const active = seeds.filter(seed => !['shed', 'harvested'].includes(seed.status));
+  $('#seedCount').textContent = active.length;
+  $('#seedSummary').textContent = seeds.length
+    ? `${active.length} active · ${seeds.reduce((sum, seed) => sum + seed.spent_usd, 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })} spent`
+    : 'No seeds planted yet.';
+  $('#seedList').replaceChildren(...seeds.map(seed => {
+    const card = el('article', `seed-card ${seed.status}`);
+    const assessment = seed.last_assessment;
+    const spentPercent = Math.min(100, Math.round((seed.spent_usd / seed.budget_usd) * 100));
+    const inactive = ['shed', 'harvested'].includes(seed.status);
+    card.innerHTML = `
+      <div class="seed-card-top">
+        <div><span class="seed-id">${escapeHtml(seed.seed_id)}</span><span class="seed-state">${escapeHtml(seedStatusLabel(seed.status, assessment))}</span></div>
+        <span class="seed-budget-left">$${Number(seed.remaining_usd).toFixed(3)} left</span>
+      </div>
+      <h3>${escapeHtml(seed.question)}</h3>
+      <div class="seed-meter"><i style="width:${spentPercent}%"></i></div>
+      <div class="seed-metrics">
+        <span><b>${seed.evidence_version}</b> evidence versions</span>
+        <span><b>${seed.wakes}</b> wakes</span>
+        <span><b>${seed.sleeps}</b> sleeps</span>
+        <span><b>$${Number(seed.spent_usd).toFixed(3)}</b> spent of $${Number(seed.budget_usd).toFixed(2)}</span>
+      </div>
+      <p class="seed-reason">${escapeHtml(assessment ? assessment.reason : 'Waiting for its first deterministic check.')}</p>
+      <div class="seed-evidence-entry">
+        <input class="seed-evidence-title" maxlength="100" placeholder="New evidence label" aria-label="New evidence label for ${escapeAttribute(seed.seed_id)}" ${inactive ? 'disabled' : ''}>
+        <textarea class="seed-evidence-content" maxlength="1800" placeholder="What changed in reality?" aria-label="New evidence for ${escapeAttribute(seed.seed_id)}" ${inactive ? 'disabled' : ''}></textarea>
+        <button class="add-button seed-add-evidence" type="button" ${inactive ? 'disabled' : ''}>+ Add observation</button>
+      </div>
+      <div class="seed-actions">
+        <button class="text-button seed-check" type="button" ${inactive ? 'disabled' : ''}>Check locally</button>
+        <button class="secondary-button seed-bloom" type="button" ${inactive ? 'disabled' : ''}>Bloom if material</button>
+        <button class="text-button seed-harvest" type="button" ${inactive ? 'disabled' : ''}>Harvest</button>
+      </div>`;
+    card.querySelector('.seed-add-evidence').addEventListener('click', () => addSeedEvidence(seed.seed_id, card));
+    card.querySelector('.seed-check').addEventListener('click', () => checkSeed(seed.seed_id, false));
+    card.querySelector('.seed-bloom').addEventListener('click', () => checkSeed(seed.seed_id, true));
+    card.querySelector('.seed-harvest').addEventListener('click', () => harvestSeed(seed.seed_id));
+    return card;
+  }));
+}
+
+async function refreshSeeds() {
+  try {
+    const response = await fetch('/api/seeds');
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Seeds could not be loaded.');
+    renderSeeds(data.seeds);
+  } catch (error) { toast(error.message); }
+}
+
+async function addSeedEvidence(seedId, card) {
+  const title = card.querySelector('.seed-evidence-title').value.trim();
+  const content = card.querySelector('.seed-evidence-content').value.trim();
+  if (title.length < 2 || content.length < 3) return toast('Add a label and a concrete observation.');
+  try {
+    const response = await fetch(`/api/seeds/${seedId}/evidence`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Evidence could not be added.');
+    await refreshSeeds();
+    toast(data.added ? (data.assessment.should_wake ? 'Observation added. The wake gate sees material change.' : 'Observation added. The seed remains quiet.') : 'Exact duplicate rejected; repetition is not new evidence.');
+  } catch (error) { toast(error.message); }
+}
+
+async function checkSeed(seedId, runModel) {
+  if (runModel) beginProcessing(false);
+  try {
+    const response = await fetch(`/api/seeds/${seedId}/check`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ run_model: runModel }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'The seed check could not complete.');
+    if (data.result) {
+      renderResult(data.result);
+      await refreshLedger();
+    }
+    await refreshSeeds();
+    toast(data.assessment.should_wake
+      ? (data.result ? 'The material change bloomed into a new receipt.' : 'Material change found; no model was called.')
+      : 'The change stayed below the wake gate. Zero model tokens used.');
+  } catch (error) { toast(error.message); }
+  finally { if (runModel) endProcessing(); }
+}
+
+async function harvestSeed(seedId) {
+  try {
+    const response = await fetch(`/api/seeds/${seedId}/harvest`, { method: 'POST' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'The seed could not be harvested.');
+    await refreshSeeds();
+    toast(`${seedId} harvested. Its event history remains intact.`);
+  } catch (error) { toast(error.message); }
+}
+
+async function simulateSeedGrowth() {
+  const button = $('#simulateSeed');
+  button.disabled = true;
+  button.textContent = 'Simulating…';
+  try {
+    const response = await fetch('/api/seeds/simulate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: 30, budget_usd: Number($('#seedBudget').value), material_every_days: 7 }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Simulation failed.');
+    const sim = data.simulation;
+    const output = $('#simulationResult');
+    output.innerHTML = `<strong>30-day zero-API simulation</strong><span>${sim.sleeps} quiet checks · ${sim.wakes} wakes · ${Math.round(sim.false_wake_rate * 100)}% false wakes · $${Number(sim.spent_usd).toFixed(3)} simulated spend · ${sim.budget_breaches} budget breaches · ledger ${sim.ledger_valid ? 'verified' : 'invalid'}</span>`;
+    output.classList.remove('hidden');
+  } catch (error) { toast(error.message); }
+  finally { button.disabled = false; button.textContent = 'Simulate 30 days'; }
 }
 
 async function loadSample() {
@@ -119,6 +266,7 @@ function renderResult(result) {
   $('#governorInput').textContent = Number(governor.input_tokens || 0).toLocaleString();
   $('#governorOutput').textContent = Number(governor.output_tokens || 0).toLocaleString();
   $('#governorSaved').textContent = Number(governor.saved_tokens || 0).toLocaleString();
+  $('#governorCost').textContent = `$${Number(governor.actual_cost_usd || 0).toFixed(3)}`;
   const contextEstimate = Number(governor.estimated_context_tokens_avoided || 0);
   $('#governorNote').textContent = (governor.note || 'No prior receipt was relevant.')
     + (contextEstimate ? ` Estimated context reduction: ${contextEstimate.toLocaleString()} tokens.` : '');
@@ -219,8 +367,12 @@ $('#closeDrawer').addEventListener('click', () => setDrawer(false));
 $('#scrim').addEventListener('click', () => setDrawer(false));
 $('#correctButton').addEventListener('click', () => $('#correctionDialog').showModal());
 $('#correctionForm').addEventListener('submit', appendCorrection);
+$('#seedForm').addEventListener('submit', plantSeed);
+$('#simulateSeed').addEventListener('click', simulateSeedGrowth);
 document.addEventListener('keydown', event => { if (event.key === 'Escape') setDrawer(false); });
 
 addEvidence();
 refreshHealth();
 refreshLedger();
+refreshSeeds();
+setInterval(refreshSeeds, 30000);

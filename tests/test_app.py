@@ -8,10 +8,16 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from app.contracts import DecisionRequest, EvidenceItem
+from app.contracts import (
+    DecisionRequest,
+    EvidenceItem,
+    SeedCreate,
+    SeedEvidenceCreate,
+)
 from app.ledger import AppendOnlyLedger
 from app.main import app
 from app.governor import TokenGovernor
+from app.seeds import SeedRegistry, simulate_growth
 from app import engine
 
 
@@ -27,6 +33,9 @@ def isolated_runtime(monkeypatch, tmp_path: Path) -> None:
     )
     monkeypatch.setattr(
         main_module, "governor", TokenGovernor(tmp_path / "governor_state.json")
+    )
+    monkeypatch.setattr(
+        main_module, "seed_registry", SeedRegistry(tmp_path / "seed_ledger.jsonl")
     )
 
 
@@ -285,3 +294,147 @@ def test_correction_requires_existing_decision() -> None:
         json={"note": "This should not create an orphan correction."},
     )
     assert response.status_code == 404
+
+
+def test_hard_governor_refuses_unreservable_call(tmp_path: Path) -> None:
+    tiny = TokenGovernor(tmp_path / "governor.json", daily_budget=100)
+    request = DecisionRequest(
+        question="Should the team run this carefully bounded product test?",
+        evidence=[EvidenceItem(id="E1", title="Fact", content="A measured result")],
+    )
+    plan = tiny.plan(request, [])
+    admission = tiny.reserve(request, plan, "gpt-5.6-sol")
+    assert admission.allowed is False
+    assert "Hard Governor stopped" in admission.reason
+    assert tiny.status()["reserved_tokens"] == 0
+
+
+def test_seed_tightens_wake_gate_and_enforces_budget(tmp_path: Path) -> None:
+    registry = SeedRegistry(tmp_path / "seeds.jsonl")
+    seed = registry.plant(
+        SeedCreate(
+            question="Should the product team continue the staged reliability rollout?",
+            context="Reliability must remain stable.",
+            constraints=["Stop if reliability worsens"],
+            evidence=[
+                EvidenceItem(
+                    id="E1",
+                    title="Baseline",
+                    content="Product reliability was stable at the start.",
+                )
+            ],
+            budget_usd=0.25,
+        )
+    )
+    seed_id = seed["seed_id"]
+    assert registry.check(seed_id).should_wake is True
+    admission = registry.reserve(seed_id, 0.22)
+    assert admission.allowed is True
+    registry.settle(seed_id, admission.reservation_id, 0.109)
+    registry.bloom(seed_id, "DG-BASELINE", "a" * 64)
+
+    _, duplicate_added = registry.add_evidence(
+        seed_id,
+        SeedEvidenceCreate(
+            title="Baseline", content="Product reliability was stable at the start."
+        ),
+    )
+    assert duplicate_added is False
+
+    _, added = registry.add_evidence(
+        seed_id,
+        SeedEvidenceCreate(
+            title="Android regression",
+            content="Product reliability worsened and the staged rollout failed the constraint.",
+        ),
+    )
+    assert added is True
+    assert registry.check(seed_id).should_wake is True
+    denied = registry.reserve(seed_id, 0.22)
+    assert denied.allowed is False
+    assert registry.verify()["valid"] is True
+
+
+def test_seed_api_plants_and_checks_without_model_spend() -> None:
+    payload = {
+        "question": "Should this product team keep the staged onboarding rollout active?",
+        "context": "The team wants evidence-bound monitoring.",
+        "constraints": ["Stop on a reliability regression"],
+        "evidence": [
+            {
+                "id": "E1",
+                "title": "Baseline",
+                "content": "The rollout began with stable reliability.",
+            }
+        ],
+        "budget_usd": 1.0,
+        "duration_days": 30,
+        "check_interval_hours": 24,
+        "auto_bloom": False,
+    }
+    planted = client.post("/api/seeds", json=payload)
+    assert planted.status_code == 200
+    seed_id = planted.json()["seed"]["seed_id"]
+
+    checked = client.post(f"/api/seeds/{seed_id}/check", json={"run_model": False})
+    assert checked.status_code == 200
+    assert checked.json()["assessment"]["should_wake"] is True
+    assert checked.json()["result"] is None
+    assert client.get("/api/governor").json()["daily_used_tokens"] == 0
+
+
+def test_seed_budget_denies_fresh_bloom_before_provider_call() -> None:
+    planted = client.post(
+        "/api/seeds",
+        json={
+            "question": "Should this entirely new team adopt the bounded workflow experiment?",
+            "context": "This wording intentionally has no prior live receipt.",
+            "constraints": ["Do not exceed the planted budget"],
+            "evidence": [],
+            "budget_usd": 0.10,
+            "duration_days": 30,
+            "check_interval_hours": 24,
+            "auto_bloom": False,
+        },
+    )
+    seed_id = planted.json()["seed"]["seed_id"]
+    response = client.post(
+        f"/api/seeds/{seed_id}/check", json={"run_model": True}
+    )
+    assert response.status_code == 402
+    assert "Seed budget stopped" in response.json()["detail"]
+    assert client.get("/api/governor").json()["daily_used_tokens"] == 0
+
+
+def test_longitudinal_simulation_is_quiet_and_budget_safe() -> None:
+    result = simulate_growth(days=30, budget_usd=1.0, material_every_days=7)
+    assert result["ledger_valid"] is True
+    assert result["budget_breaches"] == 0
+    assert result["false_wake_rate"] == 0
+    assert result["sleeps"] > result["wakes"]
+    assert result["spent_usd"] <= 1.0
+    routed = client.post(
+        "/api/seeds/simulate",
+        json={"days": 30, "budget_usd": 1.0, "material_every_days": 7},
+    )
+    assert routed.status_code == 200
+    assert routed.json()["simulation"]["budget_breaches"] == 0
+
+
+def test_governor_infers_cost_for_legacy_token_events(tmp_path: Path) -> None:
+    path = tmp_path / "governor.json"
+    path.write_text(
+        json.dumps(
+            {
+                "day": TokenGovernor._today(),
+                "daily_budget_tokens": 100000,
+                "daily_used_tokens": 6766,
+                "lifetime_used_tokens": 6766,
+                "events": [{"input_tokens": 3769, "output_tokens": 2997}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    status = TokenGovernor(path).status()
+    assert status["daily_spent_usd"] == 0.108755
+    assert status["spend_usd_inferred_from_legacy_events"] is True

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/styles.css?v=plant-seed-2">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -18,6 +18,7 @@
       <span>Dissent Garden</span>
     </a>
     <div class="top-actions">
+      <a class="text-button" href="#seedNursery">Seed nursery <span id="seedCount">0</span></a>
       <button class="text-button" id="ledgerButton" type="button">Decision history <span id="ledgerCount">0</span></button>
       <div class="status-pill" id="apiStatus"><span></span> Checking GPT‑5.6</div>
     </div>
@@ -76,10 +77,40 @@
       </form>
     </section>
 
+    <section class="seed-workspace" id="seedNursery" aria-labelledby="seedHeading">
+      <div class="workspace-header">
+        <div>
+          <span class="section-number">03</span>
+          <h2 id="seedHeading">Plant a Seed</h2>
+        </div>
+        <span class="seed-kicker">Local watcher · hard budget · append-only growth</span>
+      </div>
+
+      <div class="seed-intro">
+        <p>Turn the decision above into a living question. The watcher stays free while nothing meaningful changes, raises its wake threshold after noise, and cannot begin a model call without reserving its worst-case cost.</p>
+        <strong>Plant once. Spend only when reality changes.</strong>
+      </div>
+
+      <form id="seedForm" class="seed-controls">
+        <label><span>Maximum spend</span><div class="money-input"><b>$</b><input id="seedBudget" type="number" min="0.10" max="100" step="0.10" value="1.00" required></div></label>
+        <label><span>Lifetime</span><div class="unit-input"><input id="seedDuration" type="number" min="1" max="365" value="30" required><b>days</b></div></label>
+        <label><span>Check rhythm</span><div class="unit-input"><input id="seedInterval" type="number" min="1" max="168" value="24" required><b>hours</b></div></label>
+        <label class="auto-bloom-control"><input id="seedAutoBloom" type="checkbox"><span><b>Auto-bloom</b><small>Run only after a material wake while this server and API key are active.</small></span></label>
+        <button class="primary-button" type="submit">Plant current decision <span>→</span></button>
+      </form>
+
+      <div class="seed-toolbar">
+        <div><span class="micro-label">Living decisions</span><strong id="seedSummary">No seeds planted yet.</strong></div>
+        <button class="secondary-button" id="simulateSeed" type="button">Simulate 30 days</button>
+      </div>
+      <div class="simulation-result hidden" id="simulationResult"></div>
+      <div class="seed-list" id="seedList"></div>
+    </section>
+
     <section class="results hidden" id="results" aria-live="polite">
       <div class="result-banner">
         <div>
-          <span class="section-number">03</span>
+          <span class="section-number">04</span>
           <p class="eyebrow">The surviving decision</p>
           <h2 id="decisionOutput"></h2>
         </div>
@@ -98,13 +129,13 @@
       </article>
 
       <div class="result-section-heading">
-        <div><span class="section-number">04</span><h3>Role-separated passes</h3></div>
+        <div><span class="section-number">05</span><h3>Role-separated passes</h3></div>
         <p>Each seat reasoned before seeing the others.</p>
       </div>
       <div class="seat-grid" id="seatGrid"></div>
 
       <div class="result-section-heading claims-heading">
-        <div><span class="section-number">05</span><h3>What survived contact</h3></div>
+        <div><span class="section-number">06</span><h3>What survived contact</h3></div>
         <div class="claim-legend"><span class="survived-dot">Survived</span><span class="disputed-dot">Disputed</span><span class="unsupported-dot">Unsupported</span></div>
       </div>
       <div class="claim-board" id="claimBoard"></div>
@@ -131,6 +162,7 @@
         <div class="governor-metric"><span>Input tokens</span><strong id="governorInput">0</strong></div>
         <div class="governor-metric"><span>Output tokens</span><strong id="governorOutput">0</strong></div>
         <div class="governor-metric"><span>Model tokens avoided</span><strong id="governorSaved">0</strong></div>
+        <div class="governor-metric"><span>Actual model cost</span><strong id="governorCost">$0.000</strong></div>
         <div class="governor-note" id="governorNote">No prior receipt was relevant.</div>
       </div>
     </section>
@@ -166,6 +198,6 @@
   </div>
 
   <div class="toast" id="toast" role="status"></div>
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v=plant-seed-2" defer></script>
 </body>
 </html>

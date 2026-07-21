@@ -32,6 +32,11 @@ record; this file provides the human-readable narrative required for judging.
   3,769 input tokens, 2,997 output tokens, 46.83 seconds, and a valid live receipt.
   Repeated the exact request in 84 ms with zero model calls and 6,766 actual prior
   tokens avoided. See `docs/LIVE_TEST_2026-07-21.md` for the transparent record.
+- **July 21** — Added Plant a Seed: an append-only seed registry, deterministic
+  wake/backoff gate, duplicate suppression, opt-in local autopilot, hard token
+  and USD reservations, manual evidence updates, harvesting, and a zero-API
+  longitudinal simulator. The initial 30-day fixture produced 26 sleeps, five
+  material wakes, no false wakes, no budget breach, and a valid seed ledger.
 
 ## Evidence to retain for submission
 

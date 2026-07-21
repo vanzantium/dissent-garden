@@ -50,3 +50,20 @@ Publish the scenario-level scores, reviewer count, model snapshot/date, prompts,
 actual token usage, and disagreements between reviewers. Report medians and raw
 counts; do not convert the claim-survival rate into a confidence or truth score.
 
+## Longitudinal seed evaluation
+
+Run every planted-decision scenario across a 30-day stream containing exact
+duplicates, irrelevant novelty, relevant supporting evidence, and relevant
+contradictions. Preregister and report:
+
+- false wake rate on irrelevant updates;
+- material contradiction recall;
+- duplicate rejection and repeated-claim rates;
+- recommendation changes without material evidence;
+- actual cost per useful bloom;
+- budget breaches (target: zero);
+- seed and decision ledger verification.
+
+The built-in deterministic simulator is the regression floor, not evidence of
+model quality. Live longitudinal results must remain separate and use actual API
+usage.

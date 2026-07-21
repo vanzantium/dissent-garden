@@ -71,6 +71,8 @@ class GovernorReport(BaseModel):
     estimated_context_tokens_avoided: int = Field(default=0, ge=0)
     receipts_consulted: int = Field(default=0, ge=0)
     receipt_reused: str = ""
+    actual_cost_usd: float = Field(default=0, ge=0)
+    reserved_cost_usd: float = Field(default=0, ge=0)
     note: str = "No prior receipt was relevant."
 
 
@@ -95,3 +97,25 @@ class DeliberationResult(BaseModel):
 
 class CorrectionRequest(BaseModel):
     note: str = Field(min_length=5, max_length=1200)
+
+
+class SeedCreate(DecisionRequest):
+    budget_usd: float = Field(default=1.0, ge=0.10, le=100)
+    duration_days: int = Field(default=30, ge=1, le=365)
+    check_interval_hours: int = Field(default=24, ge=1, le=168)
+    auto_bloom: bool = False
+
+
+class SeedEvidenceCreate(BaseModel):
+    title: str = Field(min_length=2, max_length=100)
+    content: str = Field(min_length=3, max_length=1800)
+
+
+class SeedCheckRequest(BaseModel):
+    run_model: bool = False
+
+
+class SeedSimulationRequest(BaseModel):
+    days: int = Field(default=30, ge=7, le=365)
+    budget_usd: float = Field(default=1.0, ge=0.10, le=100)
+    material_every_days: int = Field(default=7, ge=2, le=60)

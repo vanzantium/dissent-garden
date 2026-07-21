@@ -6,14 +6,21 @@ import os
 import re
 import threading
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from .contracts import DecisionRequest, GovernorReport
 
 
 WORD = re.compile(r"[a-z0-9]{3,}")
+MODEL_PRICING_USD_PER_MILLION = {
+    "gpt-5.6": (5.0, 30.0),
+    "gpt-5.6-sol": (5.0, 30.0),
+    "gpt-5.6-terra": (2.5, 15.0),
+    "gpt-5.6-luna": (1.0, 6.0),
+}
 
 
 @dataclass
@@ -29,6 +36,22 @@ class GovernorPlan:
     exact_record: dict[str, Any] | None = None
 
 
+@dataclass
+class CostForecast:
+    input_tokens: int
+    output_tokens: int
+    total_tokens: int
+    cost_usd: float
+
+
+@dataclass
+class BudgetAdmission:
+    allowed: bool
+    reservation_id: str
+    forecast: CostForecast
+    reason: str
+
+
 class TokenGovernor:
     """Receipt-aware context and token governor.
 
@@ -36,11 +59,13 @@ class TokenGovernor:
     near-relevant receipts are ranked and compressed into a bounded brief.
     """
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, daily_budget: int | None = None) -> None:
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
-        self.daily_budget = int(os.getenv("DISSENT_GARDEN_DAILY_TOKEN_BUDGET", "100000"))
+        self.daily_budget = daily_budget or int(
+            os.getenv("DISSENT_GARDEN_DAILY_TOKEN_BUDGET", "100000")
+        )
 
     @staticmethod
     def _today() -> str:
@@ -53,8 +78,11 @@ class TokenGovernor:
             "daily_used_tokens": 0,
             "daily_saved_tokens": 0,
             "daily_estimated_context_tokens_avoided": 0,
+            "daily_spent_usd": 0.0,
             "lifetime_used_tokens": 0,
             "lifetime_saved_tokens": 0,
+            "lifetime_spent_usd": 0.0,
+            "active_reservations": {},
             "events": [],
         }
         if not self.path.exists():
@@ -69,8 +97,23 @@ class TokenGovernor:
                 daily_used_tokens=0,
                 daily_saved_tokens=0,
                 daily_estimated_context_tokens_avoided=0,
+                daily_spent_usd=0.0,
+                active_reservations={},
                 events=[],
             )
+        if state.get("daily_used_tokens", 0) and not state.get("daily_spent_usd", 0):
+            inferred = sum(
+                self.cost_usd(
+                    int(event.get("input_tokens", 0)),
+                    int(event.get("output_tokens", 0)),
+                    event.get("model", "gpt-5.6-sol"),
+                )
+                for event in state.get("events", [])
+            )
+            state["daily_spent_usd"] = round(inferred, 6)
+            if not state.get("lifetime_spent_usd", 0):
+                state["lifetime_spent_usd"] = round(inferred, 6)
+            state["spend_usd_inferred_from_legacy_events"] = True
         return state
 
     def _save(self, state: dict[str, Any]) -> None:
@@ -82,6 +125,136 @@ class TokenGovernor:
     @staticmethod
     def estimate(text: str) -> int:
         return max(1, (len(text) + 3) // 4)
+
+    @staticmethod
+    def cost_usd(input_tokens: int, output_tokens: int, model: str) -> float:
+        default_input, default_output = MODEL_PRICING_USD_PER_MILLION.get(
+            model, (5.0, 30.0)
+        )
+        input_rate = float(
+            os.getenv("DISSENT_GARDEN_INPUT_USD_PER_MILLION", str(default_input))
+        )
+        output_rate = float(
+            os.getenv("DISSENT_GARDEN_OUTPUT_USD_PER_MILLION", str(default_output))
+        )
+        return round(
+            max(0, input_tokens) * input_rate / 1_000_000
+            + max(0, output_tokens) * output_rate / 1_000_000,
+            6,
+        )
+
+    def forecast(
+        self, request: DecisionRequest, plan: GovernorPlan, model: str
+    ) -> CostForecast:
+        """Conservative preflight ceiling for the four-call pipeline."""
+        if plan.exact_record:
+            return CostForecast(0, 0, 0, 0.0)
+        request_tokens = self.estimate(
+            json.dumps(request.model_dump(), ensure_ascii=False, sort_keys=True)
+        )
+        memory_tokens = self.estimate(plan.memory_brief) if plan.memory_brief else 0
+        seat_inputs = 3 * (request_tokens + 600)
+        arbiter_input = (
+            request_tokens + memory_tokens + (3 * plan.seat_output_cap) + 900
+        )
+        input_ceiling = seat_inputs + arbiter_input
+        output_ceiling = (3 * plan.seat_output_cap) + plan.arbiter_output_cap
+        return CostForecast(
+            input_tokens=input_ceiling,
+            output_tokens=output_ceiling,
+            total_tokens=input_ceiling + output_ceiling,
+            cost_usd=self.cost_usd(input_ceiling, output_ceiling, model),
+        )
+
+    @staticmethod
+    def _live_reservations(state: dict[str, Any]) -> dict[str, Any]:
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
+        live: dict[str, Any] = {}
+        for key, item in state.get("active_reservations", {}).items():
+            try:
+                created = datetime.fromisoformat(item.get("created_at", ""))
+            except ValueError:
+                continue
+            if created >= cutoff:
+                live[key] = item
+        return live
+
+    def reserve(
+        self, request: DecisionRequest, plan: GovernorPlan, model: str
+    ) -> BudgetAdmission:
+        forecast = self.forecast(request, plan, model)
+        if forecast.total_tokens == 0:
+            return BudgetAdmission(True, "", forecast, "Receipt reuse needs no reserve.")
+        with self._lock:
+            state = self._state()
+            state["active_reservations"] = self._live_reservations(state)
+            already_reserved = sum(
+                int(item.get("tokens", 0))
+                for item in state["active_reservations"].values()
+            )
+            remaining = max(
+                0,
+                int(state["daily_budget_tokens"])
+                - int(state["daily_used_tokens"])
+                - already_reserved,
+            )
+            if forecast.total_tokens > remaining:
+                self._save(state)
+                return BudgetAdmission(
+                    False,
+                    "",
+                    forecast,
+                    f"Hard Governor stopped the call: {forecast.total_tokens:,} tokens "
+                    f"must be reserved but only {remaining:,} remain today.",
+                )
+            reservation_id = f"RES-{uuid4().hex[:12].upper()}"
+            state["active_reservations"][reservation_id] = {
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "tokens": forecast.total_tokens,
+                "cost_usd": forecast.cost_usd,
+                "model": model,
+            }
+            self._save(state)
+        return BudgetAdmission(True, reservation_id, forecast, "Worst-case call cost reserved.")
+
+    def release(self, reservation_id: str) -> None:
+        if not reservation_id:
+            return
+        with self._lock:
+            state = self._state()
+            state.get("active_reservations", {}).pop(reservation_id, None)
+            self._save(state)
+
+    def forfeit(self, reservation_id: str, note: str) -> None:
+        """Charge an uncertain failed request at its ceiling so the cap fails closed."""
+        if not reservation_id:
+            return
+        with self._lock:
+            state = self._state()
+            item = state.get("active_reservations", {}).pop(reservation_id, None)
+            if not item:
+                return
+            tokens = int(item.get("tokens", 0))
+            cost = float(item.get("cost_usd", 0))
+            state["daily_used_tokens"] += tokens
+            state["lifetime_used_tokens"] += tokens
+            state["daily_spent_usd"] += cost
+            state["lifetime_spent_usd"] += cost
+            state["events"].append(
+                {
+                    "at": datetime.now().astimezone().isoformat(),
+                    "mode": "SHED",
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "saved_tokens": 0,
+                    "estimated_context_tokens_avoided": 0,
+                    "receipts_consulted": 0,
+                    "actual_cost_usd": cost,
+                    "model": item.get("model", "gpt-5.6-sol"),
+                    "note": note,
+                }
+            )
+            self._save(state)
 
     @staticmethod
     def fingerprint(request: DecisionRequest) -> str:
@@ -235,17 +408,26 @@ class TokenGovernor:
         saved_tokens: int = 0,
         estimated_context_tokens_avoided: int = 0,
         note: str,
+        reservation_id: str = "",
+        model: str = "gpt-5.6-sol",
     ) -> GovernorReport:
         with self._lock:
             state = self._state()
             used = max(0, input_tokens) + max(0, output_tokens)
             saved = max(0, saved_tokens)
             estimated_context = max(0, estimated_context_tokens_avoided)
+            reservation = state.get("active_reservations", {}).pop(
+                reservation_id, None
+            )
+            reserved_cost = float((reservation or {}).get("cost_usd", 0))
+            actual_cost = self.cost_usd(input_tokens, output_tokens, model)
             state["daily_used_tokens"] += used
             state["daily_saved_tokens"] += saved
             state["daily_estimated_context_tokens_avoided"] += estimated_context
             state["lifetime_used_tokens"] += used
             state["lifetime_saved_tokens"] += saved
+            state["daily_spent_usd"] += actual_cost
+            state["lifetime_spent_usd"] += actual_cost
             state["events"].append(
                 {
                     "at": datetime.now().astimezone().isoformat(),
@@ -255,6 +437,8 @@ class TokenGovernor:
                     "saved_tokens": saved,
                     "estimated_context_tokens_avoided": estimated_context,
                     "receipts_consulted": plan.receipts_consulted,
+                    "actual_cost_usd": actual_cost,
+                    "model": model,
                     "note": note,
                 }
             )
@@ -266,15 +450,31 @@ class TokenGovernor:
             saved_tokens=saved,
             estimated_context_tokens_avoided=estimated_context,
             receipts_consulted=plan.receipts_consulted,
+            actual_cost_usd=actual_cost,
+            reserved_cost_usd=reserved_cost,
             note=note,
         )
 
     def status(self) -> dict[str, Any]:
         state = self._state()
+        state["active_reservations"] = self._live_reservations(state)
+        reserved_tokens = sum(
+            int(item.get("tokens", 0))
+            for item in state["active_reservations"].values()
+        )
+        reserved_usd = sum(
+            float(item.get("cost_usd", 0))
+            for item in state["active_reservations"].values()
+        )
         state["mode"] = self._mode(
             state["daily_used_tokens"], state["daily_budget_tokens"]
         )
+        state["reserved_tokens"] = reserved_tokens
+        state["reserved_usd"] = round(reserved_usd, 6)
         state["remaining_tokens"] = max(
-            0, state["daily_budget_tokens"] - state["daily_used_tokens"]
+            0,
+            state["daily_budget_tokens"]
+            - state["daily_used_tokens"]
+            - reserved_tokens,
         )
         return state
