@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -102,7 +103,11 @@ async def run_deliberation(request: DecisionRequest) -> DeliberationResult:
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # SDK errors are normalized at the API boundary.
-        diagnostic = " ".join(str(exc).split())[:700]
+        body = getattr(exc, "body", None)
+        diagnostic_source = (
+            json.dumps(body, ensure_ascii=False) if body else str(exc)
+        )
+        diagnostic = " ".join(diagnostic_source.split())[:1000]
         raise HTTPException(
             status_code=502,
             detail=(
