@@ -8,6 +8,10 @@ Dissent Garden is an evidence-bound decision workspace for product and
 engineering teams shipping under uncertainty. Three role-separated GPT-5.6
 passes examine the same decision before an arbiter sees their work:
 
+- **Try the public showcase:** <https://dissent-garden.onrender.com>
+- **Watch the 2:39 explainer:** <https://youtu.be/UlaSAha0Swk>
+- **Browse the source:** <https://github.com/vanzantium/dissent-garden>
+
 - **Builder** finds the strongest bounded, reversible proposal.
 - **Breaker** exposes failure modes, silent assumptions, and displaced cost.
 - **Grounder** audits claims against the evidence and constraints supplied.

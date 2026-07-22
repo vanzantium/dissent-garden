@@ -20,9 +20,9 @@ reality materially changes.
 
 ## Links to complete before submission
 
-- Public showcase: `ADD RENDER URL`
-- Public or judge-shared repository: `ADD GITHUB URL`
-- Public YouTube demo under three minutes: `ADD YOUTUBE URL`
+- Public showcase: <https://dissent-garden.onrender.com>
+- Public repository: <https://github.com/vanzantium/dissent-garden>
+- Public YouTube demo (2:39): <https://youtu.be/UlaSAha0Swk>
 - Primary Codex `/feedback` session ID: `ADD SESSION ID`
 
 ## Inspiration

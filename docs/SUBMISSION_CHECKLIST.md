@@ -19,11 +19,10 @@ The current official rules are at <https://openai.devpost.com/rules>.
 ## Account-owned actions required before submission
 
 - [ ] Confirm entrant eligibility and click **Join Hackathon** on Devpost.
-- [ ] Publish this repository, or keep it private and share it with
-  `testing@devpost.com` and `build-week-event@openai.com`.
-- [ ] Deploy `render.yaml` and paste the public showcase URL into the submission.
-- [ ] Record the scripted demo with English audio, keep it under three minutes,
-  upload it publicly to YouTube, and paste its URL.
+- [x] Publish this repository: <https://github.com/vanzantium/dissent-garden>.
+- [x] Deploy the public showcase: <https://dissent-garden.onrender.com>.
+- [x] Record the scripted demo with English audio, keep it under three minutes,
+  and upload it publicly to YouTube: <https://youtu.be/UlaSAha0Swk>.
 - [ ] Run `/feedback` in the primary Codex build task and paste the Session ID.
 - [ ] Upload the cover image and at least one product screenshot.
 - [ ] Paste the fields from `docs/SUBMISSION_DRAFT.md` and choose
@@ -34,12 +33,12 @@ The current official rules are at <https://openai.devpost.com/rules>.
 
 ## Video compliance gate
 
-- [ ] Duration is 2:35–2:50 and definitely under 3:00.
-- [ ] Audio clearly explains what was built and how Codex and GPT-5.6 were used.
-- [ ] The video visibly demonstrates the working product.
-- [ ] No copyrighted music, third-party logos, private corpus text, personal
+- [x] Duration is 2:39 and definitely under 3:00.
+- [x] Audio clearly explains what was built and how Codex and GPT-5.6 were used.
+- [x] The video visibly demonstrates the working product.
+- [x] No copyrighted music, third-party logos, private corpus text, personal
   decisions, API keys, billing pages, email addresses, or other private data.
-- [ ] YouTube visibility is **Public**, not Unlisted or Private.
+- [x] YouTube visibility is **Public**, not Unlisted or Private.
 
 ## Final technical gate
 
