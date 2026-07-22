@@ -1,4 +1,4 @@
-const state = { evidenceCount: 0, result: null, processingTimer: null, seeds: [] };
+const state = { evidenceCount: 0, result: null, processingTimer: null, seeds: [], liveReady: false };
 const $ = (selector) => document.querySelector(selector);
 const el = (tag, className) => { const node = document.createElement(tag); if (className) node.className = className; return node; };
 
@@ -310,8 +310,13 @@ async function refreshHealth() {
     const response = await fetch('/api/health');
     const health = await response.json();
     const status = $('#apiStatus');
+    state.liveReady = Boolean(health.live_ready);
     status.classList.toggle('live', health.live_ready);
     status.lastChild.textContent = health.live_ready ? ` GPT‑5.6 live` : ' Showcase ready';
+    $('#deliberateButton').innerHTML = health.live_ready
+      ? 'Convene the garden <span>→</span>'
+      : 'Watch prepared showcase <span>→</span>';
+    $('#showcaseButton').hidden = !health.live_ready;
   } catch { $('#apiStatus').lastChild.textContent = ' Server offline'; }
 }
 
@@ -361,7 +366,11 @@ async function appendCorrection(event) {
 $('#addEvidence').addEventListener('click', () => addEvidence());
 $('#sampleButton').addEventListener('click', loadSample);
 $('#showcaseButton').addEventListener('click', () => run('/api/showcase', true));
-$('#decisionForm').addEventListener('submit', (event) => { event.preventDefault(); run('/api/deliberate'); });
+$('#decisionForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (state.liveReady) run('/api/deliberate');
+  else run('/api/showcase', true);
+});
 $('#ledgerButton').addEventListener('click', async () => { await refreshLedger(); setDrawer(true); });
 $('#closeDrawer').addEventListener('click', () => setDrawer(false));
 $('#scrim').addEventListener('click', () => setDrawer(false));

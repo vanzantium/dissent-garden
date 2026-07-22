@@ -40,7 +40,9 @@ def isolated_runtime(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_health_and_front_door() -> None:
-    assert client.get("/").status_code == 200
+    front_door = client.get("/")
+    assert front_door.status_code == 200
+    assert "Watch prepared showcase" in front_door.text
     response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json()["model"] == "gpt-5.6-sol"
